@@ -114,6 +114,7 @@ export interface CartItem extends Product {
 
 export interface Review {
   id: string;
+  userId?: string;
   author: string;
   rating: number;
   text: string;
@@ -146,7 +147,6 @@ export interface WalletProduct {
   purchaseDate: string;
   warrantyStatus: 'Active' | 'Expired';
   warrantyExpiry: string;
-  serialNumber: string;
   status: 'In Use' | 'Needs Repair' | 'Ready for Trade-in';
 }
 

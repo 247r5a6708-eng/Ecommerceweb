@@ -6,8 +6,10 @@ import React from "react";
 
 import { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import AIChatBot from './components/AIChatBot';
 import Hero from './components/Hero';
 import ProductGrid from './components/ProductGrid';
+import Recommendations from './components/Recommendations';
 import CategoryFilter from './components/CategoryFilter';
 import Cart from './components/Cart';
 import UserProfile from './components/UserProfile';
@@ -23,12 +25,16 @@ import NotifyMeModal from "./components/NotifyMeModal";
 import RecentlyViewed from './components/RecentlyViewed';
 import { Mail, Scale, X } from 'lucide-react';
 import { Product, CartItem, Order, Review, ToastType } from './types';
-import { products } from './data';
+import { useCatalog } from './contexts/CatalogContext';
+import { useUser } from './contexts/UserContext';
+import { categories, productTypes } from './data';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import * as firestoreService from './lib/firestore';
 
 export default function App() {
+  const { products, isLoading } = useCatalog();
+  const { wishlistItems, setWishlistItems, orders, setOrders, walletItems, setWalletItems, userProfile, setUserProfile, reviews, setReviews } = useUser();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -38,7 +44,39 @@ export default function App() {
   const [notifyProduct, setNotifyProduct] = useState<Product | null>(null);
   const [notifyEmail, setNotifyEmail] = useState("");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiMatchedIds, setAiMatchedIds] = useState<string[] | null>(null);
+  const [isAiSearching, setIsAiSearching] = useState(false);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setAiMatchedIds(null);
+      return;
+    }
+
+    const performAISearch = async () => {
+      setIsAiSearching(true);
+      try {
+        const res = await fetch('/api/ai-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: searchQuery })
+        });
+        const data = await res.json();
+        setAiMatchedIds(data.matchedIds || []);
+      } catch (err) {
+        console.error('AI Search failed', err);
+        setAiMatchedIds(null);
+      } finally {
+        setIsAiSearching(false);
+      }
+    };
+
+    // Debounce or just fire if they hit enter in Hero (which sets searchQuery once)
+    performAISearch();
+  }, [searchQuery]);
+
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [activeType, setActiveType] = useState('All');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -98,40 +136,11 @@ export default function App() {
     return saved ? saved === 'dark' : true;
   });
 
-  const [wishlistItems, setWishlistItems] = useState<string[]>(() => {
-    const saved = localStorage.getItem('wishlist');
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('orders');
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  const [userProfile, setUserProfile] = useState(() => {
-    const saved = localStorage.getItem('userProfile');
-    return saved ? JSON.parse(saved) : {
-      name: 'Alex Johnson',
-      email: 'alex.johnson@example.com',
-      phone: '+1 (555) 123-4567',
-      address: '123 Tech Lane, San Francisco, CA 94105',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80'
-    };
-  });
 
-  const [walletItems, setWalletItems] = useState<any[]>(() => {
-    const saved = localStorage.getItem('walletItems');
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  useEffect(() => {
-    localStorage.setItem('walletItems', JSON.stringify(walletItems));
-  }, [walletItems]);
 
-  const [reviews, setReviews] = useState<Record<string, Review[]>>(() => {
-    const saved = localStorage.getItem('reviews');
-    return saved ? JSON.parse(saved) : {};
-  });
 
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   
@@ -170,21 +179,9 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  useEffect(() => {
-    localStorage.setItem('wishlist', JSON.stringify(wishlistItems));
-  }, [wishlistItems]);
 
-  useEffect(() => {
-    localStorage.setItem('orders', JSON.stringify(orders));
-  }, [orders]);
 
-  useEffect(() => {
-    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-  }, [userProfile]);
 
-  useEffect(() => {
-    localStorage.setItem('reviews', JSON.stringify(reviews));
-  }, [reviews]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -308,7 +305,6 @@ export default function App() {
         purchaseDate: order.date,
         warrantyStatus: 'Active' as const,
         warrantyExpiry: d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
-        serialNumber: 'SN-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
         status: 'In Use' as const
       };
     });
@@ -349,7 +345,7 @@ export default function App() {
 
   const cartItemCount = cartItems.reduce((count, item) => count + item.quantity, 0);
 
-  const availableTypes = ['All', ...Array.from(new Set(products.filter(p => activeCategory === 'All' || p.category === activeCategory).map(p => p.type)))];
+  const availableTypes: string[] = ['All', ...Array.from(new Set(products.filter(p => activeCategory === 'All' || p.category === activeCategory).map(p => p.type))) as string[]];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#030305] font-sans text-gray-900 dark:text-gray-100 selection:bg-blue-500/30 transition-colors duration-500 relative">
@@ -387,6 +383,8 @@ export default function App() {
       />
       
       <ProductGrid 
+        aiMatchedIds={aiMatchedIds}
+        isAiSearching={isAiSearching}
         onAddToCart={handleAddToCart} 
         searchQuery={searchQuery} 
         activeCategory={activeCategory}

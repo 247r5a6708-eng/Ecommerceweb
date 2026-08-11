@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { Product, Review } from '../types';
-import { ShoppingBag, Star, Heart, TrendingUp, Eye, Scale, ShieldCheck, Leaf, Wrench, Share2, MessageCircle, Copy, Check, X, Mail } from 'lucide-react';
+import { Leaf, Wrench, Scale, Heart, Eye, Mail, ShoppingBag, Star, Share2, MessageCircle, Check, Copy, TrendingUp } from "lucide-react";
 import PriceChart from './PriceChart';
 import QuickViewModal from './QuickViewModal';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
@@ -140,14 +140,7 @@ export default function ProductCard({ product, onAddToCart, isWishlisted, onTogg
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80" />
           
-          {/* Trust Badges */}
           <div className="absolute top-4 left-4 flex flex-col space-y-2 z-20" style={{ transform: "translateZ(40px)" }}>
-            {product.trustScore && (
-              <div className="flex items-center space-x-1 bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm border border-white/20 dark:border-white/20" title="Verified Authentic & Trusted Seller">
-                <ShieldCheck className="w-3 h-3 text-blue-400" />
-                <span>{product.trustScore} Trust</span>
-              </div>
-            )}
             <div className="flex space-x-1">
               {product.sustainabilityGrade && (
                 <div className={`flex items-center space-x-1 ${product.sustainabilityGrade === 'A' || product.sustainabilityGrade === 'B' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-black/30 dark:bg-white/10 text-white border-white/20 dark:border-white/20'} backdrop-blur-md text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm border`} title="Sustainability Grade">
@@ -244,7 +237,7 @@ export default function ProductCard({ product, onAddToCart, isWishlisted, onTogg
           <div className="flex justify-between items-start mb-3">
             <div>
               <p className="text-[10px] font-bold text-blue-400 dark:text-blue-400 uppercase tracking-[0.2em] mb-1.5">
-                {product.brand} • {product.category}
+                {product.brand} • {product.category}{product.seller && ` • ${product.seller}`}
               </p>
               <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-1 leading-snug tracking-tight">
                 <a href="#" onClick={(e) => {

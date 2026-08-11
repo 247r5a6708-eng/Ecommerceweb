@@ -1,13 +1,13 @@
-import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
+const fs = require('fs');
+let content = fs.readFileSync('src/components/Hero.tsx', 'utf-8');
+
+const imports = `import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
 import { ArrowRight, Search, Camera, Clock, TrendingUp, X } from 'lucide-react';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';`;
 
-interface HeroProps {
-  onSearch?: (intent: string) => void;
-}
+content = content.replace(/import \{ motion.*from 'react';/s, imports);
 
-export default function Hero({ onSearch }: HeroProps) {
-  const [intent, setIntent] = useState('');
+const states = `  const [intent, setIntent] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -58,28 +58,11 @@ export default function Hero({ onSearch }: HeroProps) {
     if (productsSection) {
       productsSection.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end start"]
-  });
+  };`;
 
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, 200]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+content = content.replace("  const [intent, setIntent] = useState('');", states);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    const { left, top, width, height } = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - left) / width - 0.5;
-    const y = (e.clientY - top) / height - 0.5;
-    setMousePosition({ x, y });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+const handleSubmitLogic = `  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!intent.trim()) return;
     
@@ -88,72 +71,11 @@ export default function Hero({ onSearch }: HeroProps) {
     
     if (onSearch) {
       onSearch(intent);
-    }
-    
-    const productsSection = document.getElementById('products');
-    if (productsSection) {
-      productsSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+    }`;
 
-  return (
-    <div 
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      className="relative min-h-[90vh] flex items-center justify-center bg-gray-50 dark:bg-[#030305] z-30"
-    >
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* 3D Grid Background */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30 [transform:perspective(1000px)_rotateX(60deg)_translateY(100px)_scale(2)] origin-bottom" />
-        
-        {/* Animated Orbs */}
-        <motion.div 
-           animate={{
-            x: mousePosition.x * -100,
-            y: mousePosition.y * -100,
-          }}
-          transition={{ type: "spring", stiffness: 50, damping: 20 }}
-          className="absolute top-[20%] left-[20%] w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none" 
-        />
-        <motion.div 
-           animate={{
-            x: mousePosition.x * 100,
-            y: mousePosition.y * 100,
-          }}
-          transition={{ type: "spring", stiffness: 50, damping: 20 }}
-          className="absolute bottom-[20%] right-[20%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" 
-        />
-      </div>
+content = content.replace(/  const handleSubmit = \(e: React.FormEvent\) => \{[\s\S]*?if \(onSearch\) \{[\s\S]*?onSearch\(intent\);[\s\S]*?\}/, handleSubmitLogic);
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <motion.div 
-          style={{ y: y1, opacity }}
-          className="text-center max-w-5xl mx-auto"
-        >
-          <motion.h1 
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-6xl md:text-8xl font-extrabold tracking-tighter mb-8 leading-[1.05]"
-          >
-            <span className="text-gray-900 dark:text-white">Shop The</span> <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 neon-text-shadow">Future</span>
-          </motion.h1>
-          
-          <motion.form 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            onSubmit={handleSubmit} 
-            className="relative group max-w-3xl mx-auto"
-            style={{ 
-              transform: `perspective(1000px) rotateX(${mousePosition.y * 10}deg) rotateY(${mousePosition.x * 10}deg)`,
-              transition: 'transform 0.1s ease-out'
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-xl transition-opacity opacity-50 group-hover:opacity-100" />
-            
-            <div className="relative glass-panel rounded-3xl p-2 flex items-center border border-white/20" ref={suggestionsRef}>
+const inputUI = `<div className="relative glass-panel rounded-3xl p-2 flex items-center border border-white/20" ref={suggestionsRef}>
               <div className="pl-6 pointer-events-none">
                 <Search className="h-6 w-6 text-blue-400" />
               </div>
@@ -224,10 +146,8 @@ export default function Hero({ onSearch }: HeroProps) {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-          </motion.form>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
+            </div>`;
+
+content = content.replace(/<div className="relative glass-panel rounded-3xl p-2 flex items-center border border-white\/20">[\s\S]*?<\/div>/, inputUI);
+
+fs.writeFileSync('src/components/Hero.tsx', content);

@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ShoppingBag, Star, Mail } from 'lucide-react';
+import { X, ShoppingBag, Star, Mail, TrendingUp, TrendingDown, Minus, Loader2, UserCheck } from 'lucide-react';
 import { Product, Review } from '../types';
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { useUser } from '../contexts/UserContext';
 import SafeProductImage from './SafeProductImage';
 
 interface QuickViewModalProps {
@@ -19,6 +20,59 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
   const { formatPrice } = useCurrency();
 
   const [selectedSize, setSelectedSize] = useState<string | undefined>(product.sizes ? product.sizes[0] : undefined);
+  const { userProfile } = useUser();
+  const [aiCompat, setAiCompat] = useState<any>(null);
+  const [isCompatAnalyzing, setIsCompatAnalyzing] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && product && userProfile) {
+      const fetchCompat = async () => {
+        setIsCompatAnalyzing(true);
+        try {
+          const res = await fetch('/api/ai-compatibility-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: product.id, userProfile })
+          });
+          const data = await res.json();
+          setAiCompat(data);
+        } catch (error) {
+          console.error("Failed to fetch compat", error);
+        } finally {
+          setIsCompatAnalyzing(false);
+        }
+      };
+      fetchCompat();
+    } else {
+      setAiCompat(null);
+    }
+  }, [isOpen, product, userProfile]);
+  const [aiPriceInsight, setAiPriceInsight] = useState<any>(null);
+  const [isPriceAnalyzing, setIsPriceAnalyzing] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && product) {
+      const fetchPriceInsight = async () => {
+        setIsPriceAnalyzing(true);
+        try {
+          const res = await fetch('/api/ai-price-insight', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: product.id })
+          });
+          const data = await res.json();
+          setAiPriceInsight(data);
+        } catch (error) {
+          console.error("Failed to fetch price insight", error);
+        } finally {
+          setIsPriceAnalyzing(false);
+        }
+      };
+      fetchPriceInsight();
+    } else {
+      setAiPriceInsight(null);
+    }
+  }, [isOpen, product]);
 
   useEffect(() => {
     setSelectedSize(product.sizes ? product.sizes[0] : undefined);
@@ -67,7 +121,7 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
               </p>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{product.name}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Model: {product.model} | {product.variant}
+                Model: {product.model} | {product.variant}{product.seller && ` | Sold by: ${product.seller}`}
               </p>
               
               <div className="flex items-center mb-4">
