@@ -73,8 +73,11 @@ export default function App() {
       }
     };
 
-    // Debounce or just fire if they hit enter in Hero (which sets searchQuery once)
-    performAISearch();
+    const timer = setTimeout(() => {
+      performAISearch();
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -374,6 +377,7 @@ export default function App() {
       
       <Hero onSearch={setSearchQuery} />
       
+      <div className="relative z-20 bg-gray-50 dark:bg-[#030305]">
       <CategoryFilter 
         activeType={activeType}
         availableTypes={availableTypes} 
@@ -382,7 +386,7 @@ export default function App() {
         onSortChange={setSortOption}
       />
       
-      <ProductGrid 
+      <ProductGrid cartItems={cartItems} 
         aiMatchedIds={aiMatchedIds}
         isAiSearching={isAiSearching}
         onAddToCart={handleAddToCart} 
@@ -400,6 +404,7 @@ export default function App() {
         onProductClick={handleProductClick}
         onNotifyMe={setNotifyProduct}
       />
+      </div>
       
       <Cart 
         isOpen={isCartOpen}

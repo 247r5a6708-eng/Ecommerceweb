@@ -33,7 +33,7 @@ export default function Recommendations({ wishlistItems, cartItems, onAddToCart,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             wishlistIds: wishlistItems,
-            cartIds: cartItems.map(c => c.productId)
+            cartIds: cartItems.map(c => c.id || c.productId)
           })
         });
         const data = await res.json();
@@ -45,7 +45,11 @@ export default function Recommendations({ wishlistItems, cartItems, onAddToCart,
       }
     };
 
-    fetchRecommendations();
+    const timer = setTimeout(() => {
+      fetchRecommendations();
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, [wishlistItems, cartItems]);
 
   if (wishlistItems.length === 0 && cartItems.length === 0) return null;

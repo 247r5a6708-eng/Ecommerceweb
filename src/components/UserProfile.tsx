@@ -291,7 +291,7 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                 {activeTab === 'orders' ? (
                   <>
                     <div className="mb-8">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Total Spent (Last 6 Months)</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Purchase History</h3>
                       <div className="h-48 w-full bg-white dark:bg-[#121216] rounded-xl border border-gray-100 dark:border-white/5 p-4 shadow-sm hover:shadow-lg hover:shadow-blue-500/5 hover:scale-[1.01] transition-all duration-300">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={spendingData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

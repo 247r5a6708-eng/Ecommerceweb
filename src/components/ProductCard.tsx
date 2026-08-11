@@ -9,6 +9,7 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from
 import SafeProductImage from './SafeProductImage';
 
 interface ProductCardProps {
+  cartItems?: any[];
   product: Product;
   onAddToCart: (product: Product) => void;
   isWishlisted: boolean;
@@ -21,7 +22,7 @@ interface ProductCardProps {
   onNotifyMe?: (product: Product) => void;
 }
 
-export default function ProductCard({ product, onAddToCart, isWishlisted, onToggleWishlist, reviews = [], onOpenReviews, isCompared = false, onToggleCompare, onProductClick, onNotifyMe }: ProductCardProps) {
+export default function ProductCard({ cartItems = [], product, onAddToCart, isWishlisted, onToggleWishlist, reviews = [], onOpenReviews, isCompared = false, onToggleCompare, onProductClick, onNotifyMe }: ProductCardProps) {
   const { formatPrice } = useCurrency();
 
   const [showChart, setShowChart] = useState(false);
@@ -372,7 +373,7 @@ export default function ProductCard({ product, onAddToCart, isWishlisted, onTogg
         </div>
       </motion.div>
       
-      <QuickViewModal 
+      <QuickViewModal cartItems={cartItems} 
         product={product}
         isOpen={isQuickViewOpen}
         onClose={() => setIsQuickViewOpen(false)}

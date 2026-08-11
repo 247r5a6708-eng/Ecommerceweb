@@ -1,11 +1,13 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Fuse from 'fuse.js';
 import ProductCard from './ProductCard';
 import ProductCardSkeleton from './ProductCardSkeleton';
 import { Product, Review } from '../types';
 import { useCatalog } from '../contexts/CatalogContext';
 
 interface ProductGridProps {
+  cartItems?: any[];
   aiMatchedIds?: string[] | null;
   isAiSearching?: boolean;
   onAddToCart: (product: Product) => void;
@@ -24,70 +26,92 @@ interface ProductGridProps {
   onNotifyMe?: (product: Product) => void;
 }
 
-export default function ProductGrid({ onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading: propIsLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick, onNotifyMe, aiMatchedIds, isAiSearching }: ProductGridProps) {
+export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading: propIsLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick, onNotifyMe, aiMatchedIds, isAiSearching }: ProductGridProps) {
   const { products, isLoading: contextIsLoading } = useCatalog();
   const isLoading = propIsLoading || contextIsLoading || isAiSearching;
+  const [fuzzySearchTerm, setFuzzySearchTerm] = useState('');
+
   const filteredProducts = useMemo(() => {
     let result = products.filter(p => {
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
       const matchesType = activeType === 'All' || p.type === activeType;
-      
-      if (aiMatchedIds) {
-        return aiMatchedIds.includes(p.id) && matchesCategory && matchesType;
-      }
-      
-      if (!searchQuery) return matchesCategory && matchesType;
-      
-      const query = searchQuery.toLowerCase();
-      
-      // Advanced Search Logic (Phase 5)
-      
-      // 1. Extract budget (e.g., "under 500", "under $50", "under ₹40000", "< 100")
-      let maxBudget = Infinity;
-      const budgetMatch = query.match(/(?:under|below|<|less than)\s*(?:[$€£₹])?\s*(\d+)/i);
-      if (budgetMatch && budgetMatch[1]) {
-        maxBudget = parseInt(budgetMatch[1], 10);
-      }
+      return matchesCategory && matchesType;
+    });
 
-      // If currency is INR and we are searching for INR budget, we should probably factor exchange rate? 
-      // The requirement just says "budget", let's assume we filter on the raw USD price or they mean the converted price.
-      // Since we don't have currency context easily available here in the filter loop (or we could use it if we passed it), 
-      // let's do a basic check on the raw price for now, assuming USD base. 
-      // A more robust implementation would pass `currencyRate` down.
-      // If we assume the query budget is in the user's current currency, we'd need the rate. Let's just use `p.price`.
-      const matchesBudget = p.price <= maxBudget;
+    if (aiMatchedIds) {
+      return result.filter(p => aiMatchedIds.includes(p.id));
+    }
 
-      const matchesSearch = 
-        p.name.toLowerCase().includes(query) || 
-        p.description.toLowerCase().includes(query) ||
-        p.brand.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query) ||
-        (p.aiSummary && p.aiSummary.toLowerCase().includes(query)) ||
-        p.type.toLowerCase().includes(query);
-      
-      // Basic semantic keywords simulation
-      const hasDurabilityIntent = ['durable', 'lasting', 'strong', 'repair'].some(k => query.includes(k));
-      const hasSustainabilityIntent = ['eco', 'sustainable', 'green', 'organic'].some(k => query.includes(k));
-      const hasGamingIntent = ['gaming', 'game', 'fps', 'rgb', 'play'].some(k => query.includes(k));
-      const hasOfficeIntent = ['office', 'work', 'typing', 'business', 'professional'].some(k => query.includes(k));
-      const hasTravelIntent = ['travel', 'portable', 'lightweight', 'compact', 'commuting'].some(k => query.includes(k));
-      const hasBudgetIntent = ['cheap', 'budget', 'affordable', 'value', 'inexpensive'].some(k => query.includes(k));
-      
-      let semanticMatch = false;
-      if (hasDurabilityIntent && p.repairabilityScore && p.repairabilityScore >= 7) semanticMatch = true;
-      if (hasSustainabilityIntent && (p.sustainabilityGrade === 'A' || p.sustainabilityGrade === 'B')) semanticMatch = true;
-      if (hasGamingIntent && (p.category === 'Electronics' && (p.name.toLowerCase().includes('gam') || p.description.toLowerCase().includes('gam')))) semanticMatch = true;
-      if (hasOfficeIntent && (p.category === 'Electronics' || p.category === 'Accessories') && !p.name.toLowerCase().includes('gam')) semanticMatch = true;
-      if (hasTravelIntent && (p.type === 'Audio' || p.type === 'Bags' || p.type === 'Gadgets')) semanticMatch = true;
-      if (hasBudgetIntent && p.price < 100) semanticMatch = true;
+    if (!searchQuery) {
+       return result;
+    }
 
-      // Ensure budget constraint is respected if present
-      if (maxBudget !== Infinity && !matchesBudget) return false;
+    const query = searchQuery.toLowerCase();
 
-      return matchesCategory && matchesType && (matchesSearch || semanticMatch);
+    // 1. Extract budget
+    let maxBudget = Infinity;
+    const budgetMatch = query.match(/(?:under|below|<|less than)\s*(?:[$€£₹])?\s*(\d+)/i);
+    if (budgetMatch && budgetMatch[1]) {
+      maxBudget = parseInt(budgetMatch[1], 10);
+    }
+    
+    // Apply budget constraint early if present
+    if (maxBudget !== Infinity) {
+       result = result.filter(p => p.price <= maxBudget);
+    }
+    
+    // Semantic intents
+    const hasDurabilityIntent = ['durable', 'lasting', 'strong', 'repair'].some(k => query.includes(k));
+    const hasSustainabilityIntent = ['eco', 'sustainable', 'green', 'organic'].some(k => query.includes(k));
+    const hasGamingIntent = ['gaming', 'game', 'fps', 'rgb', 'play'].some(k => query.includes(k));
+    const hasOfficeIntent = ['office', 'work', 'typing', 'business', 'professional'].some(k => query.includes(k));
+    const hasTravelIntent = ['travel', 'portable', 'lightweight', 'compact', 'commuting'].some(k => query.includes(k));
+    const hasBudgetIntent = ['cheap', 'budget', 'affordable', 'value', 'inexpensive'].some(k => query.includes(k));
+
+    // Fuzzy search
+    const fuse = new Fuse(result, {
+      keys: ['name', 'brand', 'category', 'type', 'description'],
+      threshold: 0.4, // lower is more strict
+      ignoreLocation: true,
+      useExtendedSearch: true
     });
     
-    return result.sort((a, b) => {
+    // If the query is mostly about budget and semantic intents, we might not want to heavily filter by text match.
+    // We'll see.
+    let semanticMatchedIds = new Set<string>();
+    
+    result.forEach(p => {
+      if (hasDurabilityIntent && p.repairabilityScore && p.repairabilityScore >= 7) semanticMatchedIds.add(p.id);
+      if (hasSustainabilityIntent && (p.sustainabilityGrade === 'A' || p.sustainabilityGrade === 'B')) semanticMatchedIds.add(p.id);
+      if (hasGamingIntent && (p.category === 'Electronics' && (p.name.toLowerCase().includes('gam') || p.description.toLowerCase().includes('gam')))) semanticMatchedIds.add(p.id);
+      if (hasOfficeIntent && (p.category === 'Electronics' || p.category === 'Accessories') && !p.name.toLowerCase().includes('gam')) semanticMatchedIds.add(p.id);
+      if (hasTravelIntent && (p.type === 'Audio' || p.type === 'Bags' || p.type === 'Gadgets')) semanticMatchedIds.add(p.id);
+      if (hasBudgetIntent && p.price < 100) semanticMatchedIds.add(p.id);
+    });
+    
+    // Perform fuzzy search
+    // Remove budget terms from query for fuzzy search so it doesn't try to match "under 500" against product names.
+    const cleanQuery = query.replace(/(?:under|below|<|less than)\s*(?:[$€£₹])?\s*(\d+)/i, '').trim();
+    
+    let fuzzyMatches = [];
+    if (cleanQuery) {
+       fuzzyMatches = fuse.search(cleanQuery).map(res => res.item);
+    } else {
+       fuzzyMatches = result;
+    }
+    
+    let finalResult = [];
+    
+    if (semanticMatchedIds.size > 0 && cleanQuery === '') {
+       finalResult = result.filter(p => semanticMatchedIds.has(p.id));
+    } else if (semanticMatchedIds.size > 0 && cleanQuery !== '') {
+       // Combine fuzzy matches and semantic matches
+       finalResult = Array.from(new Set([...fuzzyMatches, ...result.filter(p => semanticMatchedIds.has(p.id))]));
+    } else {
+       finalResult = fuzzyMatches;
+    }
+
+    return finalResult.sort((a, b) => {
       switch (sortOption) {
         case 'price-asc':
           return a.price - b.price;
@@ -120,7 +144,7 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
   }, [filteredProducts, activeCategory]);
 
   return (
-    <div id="products" className="bg-transparent py-8 sm:py-12 transition-colors relative z-10">
+    <div id="products" className="bg-transparent pt-8 pb-32 sm:py-12 transition-colors relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {isLoading ? (
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8">
@@ -131,7 +155,7 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">No products found</h3>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Try adjusting your search or filter to find what you're looking for.</p>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">We couldn't find an exact match or fuzzy match. Try adjusting your search, check for typos, or use a broader category.</p>
           </div>
         ) : (
           <motion.div 
@@ -161,7 +185,7 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
                   exit="exit"
                   key={product.id}
                 >
-                  <ProductCard 
+                  <ProductCard cartItems={cartItems} 
                     product={product} 
                     onAddToCart={onAddToCart} 
                     isWishlisted={wishlistItems.includes(product.id)}
@@ -206,7 +230,7 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
                     show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] } }
                   }}
                 >
-                  <ProductCard 
+                  <ProductCard cartItems={cartItems} 
                     product={product} 
                     onAddToCart={onAddToCart} 
                     isWishlisted={wishlistItems.includes(product.id)}

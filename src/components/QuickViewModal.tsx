@@ -5,9 +5,11 @@ import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useUser } from '../contexts/UserContext';
+import { useCatalog } from "../contexts/CatalogContext";
 import SafeProductImage from './SafeProductImage';
 
 interface QuickViewModalProps {
+  cartItems?: any[];
   product: Product;
   isOpen: boolean;
   onClose: () => void;
@@ -16,11 +18,43 @@ interface QuickViewModalProps {
   onNotifyMe?: (product: Product) => void;
 }
 
-export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, reviews = [], onNotifyMe }: QuickViewModalProps) {
+export default function QuickViewModal({ cartItems = [], product, isOpen, onClose, onAddToCart, reviews = [], onNotifyMe }: QuickViewModalProps) {
   const { formatPrice } = useCurrency();
 
   const [selectedSize, setSelectedSize] = useState<string | undefined>(product.sizes ? product.sizes[0] : undefined);
   const { userProfile } = useUser();
+  const { products } = useCatalog();
+  const [frequentlyBoughtIds, setFrequentlyBoughtIds] = useState<string[]>([]);
+  const [isFreqBoughtLoading, setIsFreqBoughtLoading] = useState(false);
+  
+  useEffect(() => {
+    if (isOpen && product) {
+      const fetchFreqBought = async () => {
+        setIsFreqBoughtLoading(true);
+        try {
+          const res = await fetch('/api/frequently-bought', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              productId: product.id, 
+              cartIds: cartItems.map(c => c.id || c.productId)
+            })
+          });
+          const data = await res.json();
+          setFrequentlyBoughtIds(data.recommendedIds || []);
+        } catch (error) {
+          console.error("Failed to fetch freq bought", error);
+        } finally {
+          setIsFreqBoughtLoading(false);
+        }
+      };
+      fetchFreqBought();
+    } else {
+      setFrequentlyBoughtIds([]);
+    }
+  }, [isOpen, product, cartItems]);
+  
+  const freqBoughtProducts = products.filter(p => frequentlyBoughtIds.includes(p.id) && p.id !== product.id);
   const [aiCompat, setAiCompat] = useState<any>(null);
   const [isCompatAnalyzing, setIsCompatAnalyzing] = useState(false);
 
@@ -151,6 +185,50 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
                   <p className="text-sm text-blue-800 dark:text-blue-200">
                     {product.aiSummary}
                   </p>
+                </div>
+              )}
+
+              
+              
+              {isFreqBoughtLoading ? (
+                <div className="mb-8">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Frequently Bought Together</h4>
+                  <div className="flex justify-center items-center py-4 text-blue-600 dark:text-blue-400">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <span className="ml-2 text-sm font-medium">Finding perfect matches...</span>
+                  </div>
+                </div>
+              ) : freqBoughtProducts.length > 0 && (
+
+                <div className="mb-8">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                    Frequently Bought Together
+                  </h4>
+                  <div className="space-y-4">
+                    {freqBoughtProducts.map(fbProduct => (
+                      <div key={fbProduct.id} className="flex items-center space-x-4 bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-gray-100 dark:border-white/10">
+                        <SafeProductImage
+                          src={fbProduct.image}
+                          alt={fbProduct.name}
+                          className="w-16 h-16 rounded-lg bg-white dark:bg-[#121216]"
+                          imageClassName="w-full h-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <h5 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">{fbProduct.name}</h5>
+                          <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">{formatPrice(fbProduct.price)}</p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddToCart({ ...fbProduct, selectedSize: fbProduct.sizes ? fbProduct.sizes[0] : undefined });
+                          }}
+                          className="p-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

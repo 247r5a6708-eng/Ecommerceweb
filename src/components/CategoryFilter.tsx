@@ -20,6 +20,19 @@ const sortOptions = [
 export default function CategoryFilter({ activeType, availableTypes, onTypeChange, sortOption, onSortChange }: CategoryFilterProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
+        setIsMobileDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -31,7 +44,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const activeSortLabel = sortOptions.find(opt => opt.value === sortOption)?.label || 'Sort';
+  const activeSortLabel = sortOptions.find(opt => opt.value === sortOption)?.label || "Sort";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 relative z-20">
@@ -70,7 +83,6 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
               <span>{activeSortLabel}</span>
               <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
-
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-full sm:w-48 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg py-1">
                 {sortOptions.map((option) => (

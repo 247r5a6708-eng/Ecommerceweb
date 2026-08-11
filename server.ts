@@ -16,6 +16,13 @@ const ai = new GoogleGenAI({
   }
 });
 
+const searchCache = new Map<string, string[]>();
+const recommendCache = new Map<string, string[]>();
+const compareCache = new Map<string, any>();
+const priceCache = new Map<string, any>();
+const compatCache = new Map<string, any>();
+
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -24,34 +31,44 @@ async function startServer() {
 
   // API route for AI Search
   app.post("/api/ai-search", async (req, res) => {
+    const startTime = Date.now();
     try {
       const { query } = req.body;
+      if (!query) return res.json({ matchedIds: [] });
+      
+      const cacheKey = query.toLowerCase().trim();
+      if (searchCache.has(cacheKey)) {
+         const matchedIds = searchCache.get(cacheKey) || [];
+         console.log(`[AI Search] Cache hit | Query: "${query}" | Latency: ${Date.now() - startTime}ms | Matches: ${matchedIds.length}`);
+         return res.json({ matchedIds });
+      }
+
       const products = await getProducts();
       
-      const prompt = `
-You are an AI shopping assistant for LUMINA. 
-The user searched for: "${query}"
-
+      const prompt = `You are LUMINA, an expert AI shopping assistant.
+The user is searching for: "${query}"
 Here is the list of available products in our catalog (JSON):
 ${JSON.stringify(products.map((p) => ({ id: p.id, name: p.name, category: p.category, type: p.type, description: p.description, aiSummary: p.aiSummary })))}
 
 Return a JSON array of product IDs that best match this query.
 Do not return any other text, just the JSON array.
-If no products match, return an empty array [].
-`;
+If no products match, return an empty array [].`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-lite-latest",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
         }
       });
-
       const matchedIds = JSON.parse(response.text || "[]");
+      searchCache.set(cacheKey, matchedIds);
+      
+      console.log(`[AI Search] API call | Query: "${query}" | Latency: ${Date.now() - startTime}ms | Matches: ${matchedIds.length} | Results: ${JSON.stringify(matchedIds)}`);
+      
       res.json({ matchedIds });
     } catch (error) {
-      console.error("AI Search Error:", error);
+      console.error(`[AI Search Error] Query: "${req.body?.query}" | Latency: ${Date.now() - startTime}ms`, error);
       res.status(500).json({ error: "Failed to perform AI search" });
     }
   });
@@ -77,7 +94,7 @@ Provide a helpful, concise, and friendly response. If recommending products, use
 `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-lite-latest",
         contents: prompt,
       });
 
@@ -92,29 +109,30 @@ Provide a helpful, concise, and friendly response. If recommending products, use
   app.post("/api/ai-recommend", async (req, res) => {
     try {
       const { wishlistIds, cartIds } = req.body;
+      const cacheKey = JSON.stringify({ w: wishlistIds, c: cartIds });
+      if (recommendCache.has(cacheKey)) {
+        return res.json({ recommendedIds: recommendCache.get(cacheKey) });
+      }
       const products = await getProducts();
       
-      const prompt = `
-You are an expert AI recommendation engine for LUMINA.
+      const prompt = `You are an expert AI recommendation engine for LUMINA.
 The user has the following product IDs in their wishlist: ${JSON.stringify(wishlistIds)}
 The user has the following product IDs in their cart: ${JSON.stringify(cartIds)}
-
 Here is our catalog:
 ${JSON.stringify(products.map((p) => ({ id: p.id, name: p.name, category: p.category, type: p.type })))}
 
 Based on their wishlist and cart, suggest 4 related product IDs from the catalog that they might also like. Do not suggest products already in their wishlist or cart if possible.
-Return a JSON array of 4 string product IDs. Only the array.
-`;
+Return a JSON array of 4 string product IDs. Only the array.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-lite-latest",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
         }
       });
-
       const recommendedIds = JSON.parse(response.text || "[]");
+      recommendCache.set(cacheKey, recommendedIds);
       res.json({ recommendedIds });
     } catch (error) {
       console.error("AI Recommend Error:", error);
@@ -154,7 +172,7 @@ Return the result as a JSON object with this schema:
 `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-lite-latest",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -196,7 +214,7 @@ Return as JSON:
 `;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-lite-latest",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -215,13 +233,13 @@ Return as JSON:
   app.post("/api/ai-price-insight", async (req, res) => {
     try {
       const { productId } = req.body;
+      if (priceCache.has(productId)) {
+        return res.json(priceCache.get(productId));
+      }
       const products = await getProducts();
       const product = products.find(p => p.id === productId);
       
-      const prompt = `
-You are LUMINA's Price Intelligence AI. 
-Analyze the pricing for "${product?.name || 'Unknown'}", current price: ${product?.price || 0}.
-
+      const prompt = `You are LUMINA's Price Intelligence AI. Analyze the pricing for "${product?.name || 'Unknown'}", current price: ${product?.price || 0}.
 Generate a realistic mock price intelligence report.
 Return JSON:
 {
@@ -229,18 +247,17 @@ Return JSON:
   "confidence": number (0-100),
   "analysis": "string explaining the trend",
   "historicalTrend": "up | down | stable"
-}
-`;
+}`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-lite-latest",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
         }
       });
-
       const insight = JSON.parse(response.text || "{}");
+      priceCache.set(productId, insight);
       res.json(insight);
     } catch (error) {
       console.error("AI Price Insight Error:", error);
@@ -250,14 +267,57 @@ Return JSON:
 
 
   // API route for AI Compatibility (Phase 6)
+  
+  app.post("/api/frequently-bought", async (req, res) => {
+    try {
+      const { productId, cartIds = [] } = req.body;
+      
+      const catalog = await getProducts();
+      const prompt = `
+      You are an e-commerce recommendation engine.
+      The user is currently viewing the product ID: "${productId}".
+      They currently have these product IDs in their cart: ${JSON.stringify(cartIds)}.
+      Based on this context, suggest exactly 2 complementary product IDs from our catalog that are frequently bought together with the current product.
+      Available products:
+      ${JSON.stringify(catalog.map(p => ({ id: p.id, name: p.name, category: p.category, type: p.type })))}
+      
+      Respond with ONLY a JSON array of string IDs, nothing else. Example: ["id1", "id2"]
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          temperature: 0.2,
+          responseMimeType: "application/json",
+        }
+      });
+
+      
+      let ids = [];
+      try {
+        ids = JSON.parse(response.text || "[]");
+      } catch (e) {
+        // fallback
+      }
+      res.json({ recommendedIds: ids });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to generate recommendations" });
+    }
+  });
+
   app.post("/api/ai-compatibility-profile", async (req, res) => {
     try {
       const { productId, userProfile } = req.body;
+      const cacheKey = JSON.stringify({ p: productId, u: userProfile.name });
+      if (compatCache.has(cacheKey)) {
+        return res.json(compatCache.get(cacheKey));
+      }
       const products = await getProducts();
       const product = products.find(p => p.id === productId);
       
-      const prompt = `
-You are LUMINA. Analyze if this product is a good match for this user profile.
+      const prompt = `You are LUMINA. Analyze if this product is a good match for this user profile.
 Product: ${JSON.stringify({ name: product?.name, category: product?.category, description: product?.description })}
 User Profile: ${JSON.stringify({ name: userProfile.name, preferences: userProfile.preferences, address: userProfile.address })}
 
@@ -265,18 +325,17 @@ Return JSON:
 {
   "score": number (0-100),
   "reason": "string (1-2 sentences explaining why)"
-}
-`;
+}`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-flash-lite-latest",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
         }
       });
-
       const insight = JSON.parse(response.text || "{}");
+      compatCache.set(cacheKey, insight);
       res.json(insight);
     } catch (error) {
       console.error("AI Compat Error:", error);

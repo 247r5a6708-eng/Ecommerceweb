@@ -1,5 +1,5 @@
-import { ShoppingBag, User, Search, Menu, X, Heart, Settings, LogOut, Package, CreditCard, Scale, Sun, Moon, Mic, MicOff } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Clock, ShoppingBag, User, Search, Menu, X, Heart, Settings, LogOut, Package, CreditCard, Scale, Sun, Moon, Mic, MicOff } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categories } from '../data';
 import { useCurrency, Currency } from '../contexts/CurrencyContext';
@@ -41,6 +41,65 @@ export default function Navbar({
   const [isScrolled, setIsScrolled] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [showDesktopSuggestions, setShowDesktopSuggestions] = useState(false);
+  const [showMobileSuggestions, setShowMobileSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const desktopSuggestionsRef = useRef<HTMLDivElement>(null);
+  const mobileSuggestionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('recentSearches');
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved));
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (desktopSuggestionsRef.current && !desktopSuggestionsRef.current.contains(event.target as Node)) {
+        setShowDesktopSuggestions(false);
+      }
+      if (mobileSuggestionsRef.current && !mobileSuggestionsRef.current.contains(event.target as Node)) {
+        setShowMobileSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const saveRecentSearch = (search: string) => {
+    if (!search.trim()) return;
+    const updated = [search, ...recentSearches.filter(s => s !== search)].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem('recentSearches', JSON.stringify(updated));
+  };
+
+  const clearRecentSearches = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRecentSearches([]);
+    localStorage.removeItem('recentSearches');
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    onSearchChange(suggestion);
+    setShowDesktopSuggestions(false);
+    setShowMobileSuggestions(false);
+    saveRecentSearch(suggestion);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      saveRecentSearch(searchQuery);
+      setShowDesktopSuggestions(false);
+      setShowMobileSuggestions(false);
+    }
+  };
+
   const recognitionRef = useRef<any>(null);
   const { currency, setCurrency } = useCurrency();
 
@@ -175,8 +234,8 @@ export default function Navbar({
 
           {/* Icons */}
           <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-            <div className="hidden lg:flex items-center relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="hidden lg:flex items-center relative group" ref={desktopSuggestionsRef}>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                 <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               </div>
               <input
@@ -185,11 +244,13 @@ export default function Navbar({
                 placeholder="Search matrix..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                className="block w-64 pl-10 pr-10 py-2 bg-gray-100 dark:bg-white/5 border border-transparent dark:border-white/10 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 focus:bg-white dark:focus:bg-white/10 transition-all text-gray-900 dark:text-white font-medium"
+                onFocus={() => setShowDesktopSuggestions(true)}
+                onKeyDown={handleKeyDown}
+                className="block w-64 pl-10 pr-10 py-2 bg-gray-100 dark:bg-white/5 border border-transparent dark:border-white/10 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 focus:bg-white dark:focus:bg-white/10 transition-all text-gray-900 dark:text-white font-medium relative z-10"
               />
               <button
                 onClick={toggleListening}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors z-10"
                 title={isListening ? "Stop listening" : "Start voice search"}
               >
                 {isListening ? (
@@ -198,6 +259,33 @@ export default function Navbar({
                   <MicOff className="h-4 w-4" />
                 )}
               </button>
+              
+              <AnimatePresence>
+                {showDesktopSuggestions && recentSearches.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 py-2"
+                  >
+                    <div className="flex items-center justify-between px-4 py-2">
+                      <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</h4>
+                      <button onClick={clearRecentSearches} className="text-xs text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                    </div>
+                    {recentSearches.map((search, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSuggestionClick(search)}
+                        className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
+                      >
+                        <Clock className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                        <span className="flex-1 text-left">{search}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             
             {compareCount > 0 && onOpenCompare && (
@@ -284,20 +372,22 @@ export default function Navbar({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white dark:bg-[#030305] border-b border-gray-100 dark:border-white/10 overflow-hidden"
+            className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-[#030305] border-b border-gray-100 dark:border-white/10 overflow-hidden shadow-2xl z-50"
           >
             <div className="px-4 pt-4 pb-6 space-y-4">
-              <div className="relative">
+              <div className="relative" ref={mobileSuggestionsRef}>
                 <input
                   type="text"
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="block w-full pl-4 pr-10 py-3 border border-gray-200 dark:border-white/10 rounded-xl text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white"
+                  onFocus={() => setShowMobileSuggestions(true)}
+                  onKeyDown={handleKeyDown}
+                  className="block w-full pl-4 pr-10 py-3 border border-gray-200 dark:border-white/10 rounded-xl text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white relative z-10"
                 />
                 <button
                   onClick={toggleListening}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors z-10"
                   title={isListening ? "Stop listening" : "Start voice search"}
                 >
                   {isListening ? (
@@ -306,6 +396,33 @@ export default function Navbar({
                     <MicOff className="h-4 w-4" />
                   )}
                 </button>
+                
+                <AnimatePresence>
+                  {showMobileSuggestions && recentSearches.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 py-2"
+                    >
+                      <div className="flex items-center justify-between px-4 py-2">
+                        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</h4>
+                        <button onClick={clearRecentSearches} className="text-xs text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                      </div>
+                      {recentSearches.map((search, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSuggestionClick(search)}
+                          className="w-full flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
+                        >
+                          <Clock className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                          <span className="flex-1 text-left">{search}</span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               
               <div className="grid grid-cols-2 gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
