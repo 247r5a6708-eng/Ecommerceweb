@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect } from 'react';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Minus, Plus, ShoppingBag, CheckCircle2, Loader2, CreditCard, MapPin, Truck } from 'lucide-react';
 import { CartItem, Order, Address, ToastType } from '../types';
@@ -15,6 +16,8 @@ interface CartProps {
 }
 
 export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onClearCart, onPlaceOrder, onAddToast }: CartProps) {
+  const { formatPrice } = useCurrency();
+
   const [checkoutState, setCheckoutState] = useState<'idle' | 'details' | 'loading' | 'success'>('idle');
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -105,7 +108,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
       <div className="flex-1 overflow-y-auto p-6 sm:px-6">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-            <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-2">
+            <div className="w-20 h-20 bg-gray-50 dark:bg-white/10 rounded-full flex items-center justify-center mb-2">
               <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-gray-600" />
             </div>
             <p className="text-lg font-medium text-gray-900 dark:text-white">Your cart is empty</p>
@@ -118,10 +121,10 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
             </button>
           </div>
         ) : (
-          <ul role="list" className="-my-6 divide-y divide-gray-100 dark:divide-gray-800">
+          <ul role="list" className="-my-6 divide-y divide-gray-100 dark:divide-white/10">
             {items.map((item) => (
               <li key={item.id} className="flex py-6">
-                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/10">
                   <img
                     src={item.image}
                     alt={item.name}
@@ -133,7 +136,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
                   <div>
                     <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white">
                       <h3 className="line-clamp-2 pr-4">{item.name}</h3>
-                      <p className="ml-4">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="ml-4">{formatPrice((item.price * item.quantity))}</p>
                     </div>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                       {item.category}
@@ -141,7 +144,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
                     </p>
                   </div>
                   <div className="flex flex-1 items-end justify-between text-sm">
-                    <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-md">
+                    <div className="flex items-center border border-gray-200 dark:border-white/10 rounded-md">
                       <button
                         onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1), item.selectedSize)}
                         className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -172,10 +175,10 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
       </div>
 
       {items.length > 0 && (
-        <div className="border-t border-gray-100 dark:border-gray-800 px-6 py-6 sm:px-6">
+        <div className="border-t border-gray-100 dark:border-white/5 px-6 py-6 sm:px-6">
           <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white mb-4">
             <p>Subtotal</p>
-            <p>${subtotal.toFixed(2)}</p>
+            <p>{formatPrice(subtotal)}</p>
           </div>
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400 mb-6">
             Shipping and taxes calculated at checkout.
@@ -202,38 +205,38 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
             <input 
               type="text" 
               placeholder="Full Name" 
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
+              className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
               value={address.fullName} onChange={e => setAddress({...address, fullName: e.target.value})} 
             />
             <input 
               type="text" 
               placeholder="Address Line 1" 
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
+              className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
               value={address.addressLine1} onChange={e => setAddress({...address, addressLine1: e.target.value})} 
             />
             <div className="grid grid-cols-2 gap-3">
               <input 
                 type="text" 
                 placeholder="City" 
-                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
+                className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
                 value={address.city} onChange={e => setAddress({...address, city: e.target.value})} 
               />
               <input 
                 type="text" 
                 placeholder="Zip Code" 
-                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
+                className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
                 value={address.zipCode} onChange={e => setAddress({...address, zipCode: e.target.value})} 
               />
             </div>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+        <div className="pt-4 border-t border-gray-100 dark:border-white/5">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
             <CreditCard className="w-4 h-4 mr-2" /> Payment Method
           </h3>
           <div className="space-y-2">
-            <label className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <label className="flex items-center p-3 border border-gray-200 dark:border-white/10 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <input 
                 type="radio" 
                 name="payment" 
@@ -244,7 +247,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
               />
               <span className="ml-3 text-sm text-gray-900 dark:text-white font-medium">Credit Card</span>
             </label>
-            <label className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <label className="flex items-center p-3 border border-gray-200 dark:border-white/10 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <input 
                 type="radio" 
                 name="payment" 
@@ -255,7 +258,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
               />
               <span className="ml-3 text-sm text-gray-900 dark:text-white font-medium">PayPal</span>
             </label>
-            <label className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <label className="flex items-center p-3 border border-gray-200 dark:border-white/10 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <input 
                 type="radio" 
                 name="payment" 
@@ -270,10 +273,10 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
         </div>
       </div>
 
-      <div className="pt-6 border-t border-gray-100 dark:border-gray-800 mt-auto">
+      <div className="pt-6 border-t border-gray-100 dark:border-white/5 mt-auto">
         <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white mb-6">
           <p>Total</p>
-          <p>${subtotal.toFixed(2)}</p>
+          <p>{formatPrice(subtotal)}</p>
         </div>
         <button
           onClick={handleCheckout}
@@ -306,7 +309,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Order #{placedOrder?.id}</p>
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-5 mb-6">
+        <div className="bg-gray-50 dark:bg-white/10 rounded-lg p-5 mb-6">
           <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4 flex items-center">
             <Truck className="w-4 h-4 mr-2" /> Delivery Dashboard
           </h4>
@@ -361,9 +364,9 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white dark:bg-gray-900 shadow-2xl"
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 shadow-2xl"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 {checkoutState === 'details' ? 'Checkout' : checkoutState === 'success' ? 'Invoice' : 'Your Cart'}
@@ -377,7 +380,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
             </div>
 
             {checkoutState === 'loading' && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 dark:bg-[#121216]/80 backdrop-blur-sm">
                 <Loader2 className="w-10 h-10 animate-spin text-gray-900 dark:text-white mb-4" />
                 <p className="text-sm font-medium text-gray-900 dark:text-white">Processing your order...</p>
               </div>

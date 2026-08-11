@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Heart, ShoppingBag } from 'lucide-react';
 import { Product } from '../types';
@@ -13,6 +14,8 @@ interface WishlistProps {
 }
 
 export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClearWishlist, onAddToCart }: WishlistProps) {
+  const { formatPrice } = useCurrency();
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -32,10 +35,10 @@ export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClear
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white dark:bg-gray-900 shadow-2xl"
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white dark:bg-[#121216] shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
                 <Heart className="w-5 h-5 mr-2" />
                 Your Wishlist
@@ -52,7 +55,7 @@ export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClear
             <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-                  <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mb-2">
+                  <div className="w-20 h-20 bg-gray-50 dark:bg-white/10 rounded-full flex items-center justify-center mb-2">
                     <Heart className="w-10 h-10 text-gray-300 dark:text-gray-600" />
                   </div>
                   <p className="text-lg font-medium text-gray-900 dark:text-white">Your wishlist is empty</p>
@@ -65,10 +68,10 @@ export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClear
                   </button>
                 </div>
               ) : (
-                <ul role="list" className="-my-6 divide-y divide-gray-100 dark:divide-gray-800">
+                <ul role="list" className="-my-6 divide-y divide-gray-100 dark:divide-white/10">
                   {items.map((item) => (
                     <li key={item.id} className="flex py-6">
-                      <div className="h-24 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                      <div className="h-24 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/10">
                         <img
                           src={item.image}
                           alt={item.name}
@@ -80,7 +83,7 @@ export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClear
                         <div>
                           <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white">
                             <h3 className="line-clamp-2 pr-4">{item.name}</h3>
-                            <p className="ml-4">${item.price.toFixed(2)}</p>
+                            <p className="ml-4">{formatPrice(item.price)}</p>
                           </div>
                           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{item.category}</p>
                         </div>
@@ -111,7 +114,7 @@ export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClear
             </div>
             
             {items.length > 0 && (
-              <div className="border-t border-gray-100 dark:border-gray-800 px-6 py-4">
+              <div className="border-t border-gray-100 dark:border-white/5 px-6 py-4">
                 <button
                   onClick={onClearWishlist}
                   className="w-full bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 py-3 rounded-lg font-medium hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"

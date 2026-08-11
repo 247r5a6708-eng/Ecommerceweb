@@ -32,6 +32,7 @@ export interface Product {
   selectedSize?: string;
   fitDetails?: string;
   sizeGuide?: string;
+  inStock?: boolean;
 }
 
 export interface CartItem extends Product {

@@ -1,6 +1,6 @@
 {
   "name": "E-Commerce Store",
   "description": "A modern e-commerce storefront with product catalog and shopping cart functionality.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

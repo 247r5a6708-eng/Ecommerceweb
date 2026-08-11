@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { X, Scale, Star, ShoppingBag } from 'lucide-react';
 import { Product, Review } from '../types';
 
@@ -12,6 +13,8 @@ interface CompareModalProps {
 }
 
 export default function CompareModal({ isOpen, onClose, products, onRemoveProduct, onAddToCart, reviews }: CompareModalProps) {
+  const { formatPrice } = useCurrency();
+
   if (!isOpen) return null;
 
   return (
@@ -28,9 +31,9 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-5xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 max-h-[90vh]"
+          className="relative w-full max-w-5xl bg-white dark:bg-[#121216] rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 max-h-[90vh]"
         >
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5">
             <div className="flex items-center space-x-2 text-gray-900 dark:text-white">
               <Scale className="w-5 h-5" />
               <h2 className="text-xl font-bold">Compare Products</h2>
@@ -52,7 +55,7 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
                 {products.length > 1 && (
-                  <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-gray-100 dark:bg-gray-800 -translate-x-1/2" />
+                  <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-gray-100 dark:bg-white/10 -translate-x-1/2" />
                 )}
                 {products.map((product) => {
                   const productReviews = reviews[product.id] || [];
@@ -64,12 +67,12 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
                     <div key={product.id} className="relative flex flex-col">
                       <button 
                         onClick={() => onRemoveProduct(product.id)}
-                        className="absolute top-2 right-2 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10 shadow-sm"
+                        className="absolute top-2 right-2 p-2 bg-white/80 dark:bg-[#121216]/80 backdrop-blur-md text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10 shadow-sm"
                         aria-label="Remove from comparison"
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 rounded-xl overflow-hidden mb-4 relative">
+                      <div className="aspect-[4/3] bg-gray-100 dark:bg-white/10 rounded-xl overflow-hidden mb-4 relative">
                         <img 
                           src={product.image} 
                           alt={product.name} 
@@ -85,10 +88,10 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
                         </div>
                         <span className="text-sm text-gray-400 dark:text-gray-500 ml-2">({productReviews.length} reviews)</span>
                       </div>
-                      <p className="text-2xl font-bold text-gray-900 dark:text-white mb-6">${product.price.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{formatPrice(product.price)}</p>
                       
                       <div className="flex-grow">
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 border-b border-gray-100 dark:border-gray-800 pb-2">Description</h4>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2 border-b border-gray-100 dark:border-white/5 pb-2">Description</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{product.description}</p>
                       </div>
 
@@ -105,7 +108,7 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
                   );
                 })}
                 {products.length === 1 && (
-                  <div className="hidden md:flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50 dark:bg-gray-900/50">
+                  <div className="hidden md:flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-gray-200 dark:border-white/5 rounded-2xl bg-gray-50 dark:bg-[#121216]/50">
                     <Scale className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
                     <p className="text-gray-500 dark:text-gray-400 font-medium">Select another product to compare.</p>
                   </div>
@@ -114,7 +117,7 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
             )}
             
             {products.length > 1 && (
-              <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+              <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/5">
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/50">
                   <h4 className="text-lg font-bold text-blue-900 dark:text-blue-100 mb-3 flex items-center">
                     <Star className="w-5 h-5 mr-2 text-blue-500 fill-blue-500" />

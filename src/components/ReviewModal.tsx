@@ -54,8 +54,8 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none"
           >
-            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="bg-white dark:bg-[#121216] rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Reviews for {product.name}</h2>
                 <button
                   onClick={onClose}
@@ -94,7 +94,7 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
                     <p className="text-gray-500 dark:text-gray-400 text-center py-4">No reviews yet. Be the first to review this product!</p>
                   ) : (
                     reviews.map((review) => (
-                      <div key={review.id} className="border-b border-gray-100 dark:border-gray-800 pb-6 last:border-0">
+                      <div key={review.id} className="border-b border-gray-100 dark:border-white/5 pb-6 last:border-0">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium text-gray-900 dark:text-white">{review.author}</span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -121,7 +121,7 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
               </div>
 
               {/* Add Review Form */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-6 border-t border-gray-100 dark:border-gray-800">
+              <div className="bg-gray-50 dark:bg-white/10/50 p-6 border-t border-gray-100 dark:border-white/5">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Write a Review</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -152,7 +152,7 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
                       id="author"
                       value={newReviewAuthor}
                       onChange={(e) => setNewReviewAuthor(e.target.value)}
-                      className="w-full px-4 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors"
+                      className="w-full px-4 py-2 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121216] text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors"
                       placeholder="Your name"
                       required
                     />
@@ -164,7 +164,7 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
                       value={newReviewText}
                       onChange={(e) => setNewReviewText(e.target.value)}
                       rows={3}
-                      className="w-full px-4 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors resize-none"
+                      className="w-full px-4 py-2 rounded-md border border-gray-200 dark:border-white/10 bg-white dark:bg-[#121216] text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors resize-none"
                       placeholder="What did you like or dislike?"
                       required
                     />

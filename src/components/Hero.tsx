@@ -1,6 +1,6 @@
-import { motion } from 'motion/react';
-import { ArrowRight, Sparkles, Search } from 'lucide-react';
-import React, { useState } from 'react';
+import { motion, useScroll, useTransform } from 'motion/react';
+import { ArrowRight, Search } from 'lucide-react';
+import React, { useState, useRef } from 'react';
 
 interface HeroProps {
   onSearch?: (intent: string) => void;
@@ -8,6 +8,25 @@ interface HeroProps {
 
 export default function Hero({ onSearch }: HeroProps) {
   const [intent, setIntent] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, 200]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const { left, top, width, height } = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - left) / width - 0.5;
+    const y = (e.clientY - top) / height - 0.5;
+    setMousePosition({ x, y });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,54 +43,79 @@ export default function Hero({ onSearch }: HeroProps) {
   };
 
   return (
-    <div className="relative bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors border-b border-gray-100 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 lg:pt-32 lg:pb-40">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-center max-w-3xl mx-auto"
-        >
-          <div className="flex items-center justify-center space-x-2 mb-6">
-            <span className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-1 rounded-full text-sm font-medium flex items-center border border-gray-200 dark:border-gray-700 shadow-sm">
-              <Sparkles className="w-4 h-4 mr-2 text-blue-500" />
-              AI Lifecycle Commerce
-            </span>
-          </div>
-          <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white sm:text-5xl md:text-6xl mb-6">
-            Tell us what you need. <br className="hidden sm:block" />
-            <span className="text-gray-500 dark:text-gray-400">We'll find the perfect match.</span>
-          </h1>
-          <p className="mt-3 text-base text-gray-600 dark:text-gray-300 sm:mt-5 sm:text-lg mb-10">
-            Don't search for products. Search for solutions. Describe your budget, use-case, or problem, and our AI will recommend verified, sustainable, and highly-rated solutions.
-          </p>
+    <div 
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-[#030305]"
+    >
+      {/* 3D Grid Background */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-30 [transform:perspective(1000px)_rotateX(60deg)_translateY(100px)_scale(2)] origin-bottom" />
+      
+      {/* Animated Orbs */}
+      <motion.div 
+        animate={{
+          x: mousePosition.x * -100,
+          y: mousePosition.y * -100,
+        }}
+        transition={{ type: "spring", stiffness: 50, damping: 20 }}
+        className="absolute top-[20%] left-[20%] w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none" 
+      />
+      <motion.div 
+        animate={{
+          x: mousePosition.x * 100,
+          y: mousePosition.y * 100,
+        }}
+        transition={{ type: "spring", stiffness: 50, damping: 20 }}
+        className="absolute bottom-[20%] right-[20%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" 
+      />
 
-          <form onSubmit={handleSubmit} className="relative group max-w-2xl mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              value={intent}
-              onChange={(e) => setIntent(e.target.value)}
-              className="block w-full pl-11 pr-32 py-4 sm:py-5 border-2 border-transparent bg-white dark:bg-gray-800 rounded-2xl text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 shadow-lg group-hover:shadow-xl transition-all duration-300 dark:text-white"
-              placeholder='e.g., "I need a durable backpack for a 5-day hiking trip under $150"'
-            />
-            <div className="absolute inset-y-0 right-2 flex items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <motion.div 
+          style={{ y: y1, opacity }}
+          className="text-center max-w-5xl mx-auto"
+        >
+          <motion.h1 
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-6xl md:text-8xl font-extrabold tracking-tighter mb-8 leading-[1.05]"
+          >
+            <span className="text-gray-900 dark:text-white">Shop The</span> <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 neon-text-shadow">Future</span>
+          </motion.h1>
+          
+          <motion.form 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            onSubmit={handleSubmit} 
+            className="relative group max-w-3xl mx-auto"
+            style={{ 
+              transform: `perspective(1000px) rotateX(${mousePosition.y * 10}deg) rotateY(${mousePosition.x * 10}deg)`,
+              transition: 'transform 0.1s ease-out'
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-xl transition-opacity opacity-50 group-hover:opacity-100" />
+            
+            <div className="relative glass-panel rounded-3xl p-2 flex items-center border border-white/20">
+              <div className="pl-6 pointer-events-none">
+                <Search className="h-6 w-6 text-blue-400" />
+              </div>
+              <input
+                type="text"
+                value={intent}
+                onChange={(e) => setIntent(e.target.value)}
+                className="block w-full pl-6 pr-6 py-6 bg-transparent text-xl placeholder-gray-500 focus:outline-none text-gray-900 dark:text-white font-medium"
+                placeholder="Initialize search sequence..."
+              />
               <button
                 type="submit"
-                className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 border border-transparent text-sm font-medium rounded-xl text-white bg-gray-900 hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 focus:outline-none transition-colors"
+                className="inline-flex items-center justify-center px-8 py-5 border border-transparent text-lg font-bold rounded-2xl text-black bg-white hover:bg-blue-50 focus:outline-none transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 whitespace-nowrap"
               >
-                Find <ArrowRight className="ml-2 w-4 h-4" />
+                Execute <ArrowRight className="ml-3 w-5 h-5" />
               </button>
             </div>
-          </form>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-            <span>Popular:</span>
-            <button onClick={() => setIntent("Quiet keyboard for programming")} className="hover:text-gray-900 dark:hover:text-white transition-colors underline decoration-dotted">Quiet keyboard for programming</button>
-            <button onClick={() => setIntent("Durable daily coffee maker")} className="hover:text-gray-900 dark:hover:text-white transition-colors underline decoration-dotted">Durable daily coffee maker</button>
-          </div>
+          </motion.form>
         </motion.div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { Product } from './types';
 
-export const categories = ['All', 'Electronics', 'Clothing', 'Home', 'Accessories'];
+export const categories = ['All', 'Home', 'Electronics', 'Clothing', 'Accessories'];
 
 export const productTypes = ['All', 'Audio', 'Peripherals', 'Apparel', 'Innerwear', 'Outerwear', 'Footwear', 'Kitchen', 'Decor', 'Furniture', 'Bags', 'Eyewear', 'Watches', 'Laptops', 'Gaming', 'Mobile', 'Gadgets', 'Appliances', 'Cables'];
 
@@ -33,6 +33,7 @@ export const products: Product[] = ([
     price: 199.00,
     category: 'Electronics',
     type: 'Peripherals',
+    inStock: false,
     image: 'https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=800&q=80',
     rating: 4.7,
     trustScore: 94,

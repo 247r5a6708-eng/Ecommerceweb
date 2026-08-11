@@ -23,9 +23,9 @@ export default function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyMod
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10"
+          className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#121216] rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10"
         >
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5">
             <div className="flex items-center space-x-2 text-gray-900 dark:text-white">
               <Shield className="w-5 h-5" />
               <h2 className="text-xl font-bold">Privacy Policy</h2>
@@ -77,7 +77,7 @@ export default function PrivacyPolicyModal({ isOpen, onClose }: PrivacyPolicyMod
             </div>
           </div>
           
-          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
+          <div className="px-6 py-4 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-[#121216]/50 flex justify-end">
              <button
                 onClick={onClose}
                 className="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"

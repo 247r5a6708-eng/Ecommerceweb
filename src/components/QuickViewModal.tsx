@@ -1,8 +1,9 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ShoppingBag, Star } from 'lucide-react';
+import { X, ShoppingBag, Star, Mail } from 'lucide-react';
 import { Product, Review } from '../types';
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface QuickViewModalProps {
   product: Product;
@@ -10,9 +11,12 @@ interface QuickViewModalProps {
   onClose: () => void;
   onAddToCart: (product: Product) => void;
   reviews?: Review[];
+  onNotifyMe?: (product: Product) => void;
 }
 
-export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, reviews = [] }: QuickViewModalProps) {
+export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, reviews = [], onNotifyMe }: QuickViewModalProps) {
+  const { formatPrice } = useCurrency();
+
   const [selectedSize, setSelectedSize] = useState<string | undefined>(product.sizes ? product.sizes[0] : undefined);
 
   useEffect(() => {
@@ -38,16 +42,16 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row z-10 max-h-[90vh]"
+            className="relative w-full max-w-3xl bg-white dark:bg-[#121216] rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row z-10 max-h-[90vh]"
           >
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-20 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md"
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-20 bg-white/50 dark:bg-[#121216]/50 backdrop-blur-md"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="md:w-1/2 bg-gray-100 dark:bg-gray-800 relative">
+            <div className="md:w-1/2 bg-gray-100 dark:bg-white/10 relative">
               <img 
                 src={product.image} 
                 alt={product.name} 
@@ -76,7 +80,7 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
                 <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">{averageRating.toFixed(1)} ({reviews.length} reviews)</span>
               </div>
               
-              <p className="text-2xl font-medium text-gray-900 dark:text-white mb-6">${product.price.toFixed(2)}</p>
+              <p className="text-2xl font-medium text-gray-900 dark:text-white mb-6">{formatPrice(product.price)}</p>
               
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 {product.description}
@@ -105,7 +109,7 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
                         className={`text-sm px-4 py-2 border rounded-md transition-colors ${
                           selectedSize === size
                             ? 'bg-gray-900 text-white border-gray-900 dark:bg-white dark:text-gray-900 dark:border-white font-medium'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-900 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:border-white'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-gray-900 dark:bg-white/10 dark:text-gray-300 dark:border-white/10 dark:hover:border-white'
                         }`}
                       >
                         {size}
@@ -113,7 +117,7 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
                     ))}
                   </div>
                   {(product.fitDetails || product.sizeGuide) && (
-                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg space-y-3 border border-gray-100 dark:border-gray-700/50 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="bg-gray-50 dark:bg-white/10/50 p-4 rounded-lg space-y-3 border border-gray-100 dark:border-white/10/50 text-sm text-gray-600 dark:text-gray-400">
                       {product.fitDetails && (
                         <p><strong className="text-gray-900 dark:text-gray-200">Fit:</strong> {product.fitDetails}</p>
                       )}
@@ -127,13 +131,31 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
 
               <button
                 onClick={() => {
-                  onAddToCart({ ...product, selectedSize: product.sizes ? (selectedSize || product.sizes[0]) : undefined });
-                  onClose();
+                  if (product.inStock === false) {
+                    if (onNotifyMe) onNotifyMe(product);
+                    onClose();
+                  } else {
+                    onAddToCart({ ...product, selectedSize: product.sizes ? (selectedSize || product.sizes[0]) : undefined });
+                    onClose();
+                  }
                 }}
-                className="w-full mt-auto flex items-center justify-center space-x-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-3 px-4 rounded-xl font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                className={`w-full mt-auto flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-medium transition-colors ${
+                  product.inStock === false 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
+                }`}
               >
-                <ShoppingBag className="w-5 h-5" />
-                <span>Add to Cart</span>
+                {product.inStock === false ? (
+                  <>
+                    <Mail className="w-5 h-5" />
+                    <span>Notify Me</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-5 h-5" />
+                    <span>Add to Cart</span>
+                  </>
+                )}
               </button>
             </div>
           </motion.div>

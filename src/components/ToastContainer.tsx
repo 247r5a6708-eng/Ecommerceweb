@@ -9,15 +9,16 @@ interface ToastContainerProps {
 
 export default function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4 sm:px-0">
+    <div className="fixed top-24 right-4 z-[100] flex flex-col gap-3 pointer-events-none w-full max-w-sm px-4 sm:px-0">
       <AnimatePresence>
         {toasts.map((toast) => (
           <motion.div
+            layout
             key={toast.id}
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-            className="pointer-events-auto overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 w-full bg-white dark:bg-gray-800"
+            className="pointer-events-auto overflow-hidden rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 w-full bg-white dark:bg-[#25252b]"
           >
             <div className="p-4">
               <div className="flex items-start">

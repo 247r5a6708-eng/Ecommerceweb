@@ -49,10 +49,10 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
                 <button
                   key={type}
                   onClick={() => onTypeChange(type)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-md ${
                     activeType === type
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      ? 'bg-gray-900 dark:bg-white text-white dark:text-black shadow-md'
+                      : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                   }`}
                 >
                   {type}
@@ -65,14 +65,14 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
           <div className="relative z-10 w-full sm:w-auto" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full sm:w-auto flex items-center justify-between bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-between bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <span>{activeSortLabel}</span>
               <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-full sm:w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1">
+              <div className="absolute right-0 mt-2 w-full sm:w-48 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg py-1">
                 {sortOptions.map((option) => (
                   <button
                     key={option.value}
@@ -82,7 +82,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
                     }}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                       sortOption === option.value
-                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium'
+                        ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >

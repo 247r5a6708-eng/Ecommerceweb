@@ -1,11 +1,14 @@
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { PriceHistoryPoint } from '../types';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface PriceChartProps {
   data?: PriceHistoryPoint[];
 }
 
 export default function PriceChart({ data }: PriceChartProps) {
+  const { formatPrice } = useCurrency();
+
   if (!data || data.length === 0) return null;
 
   return (
@@ -23,7 +26,7 @@ export default function PriceChart({ data }: PriceChartProps) {
           />
           <YAxis 
             tick={{ fontSize: 10, fill: '#6b7280' }}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => formatPrice(value)}
             axisLine={false}
             tickLine={false}
           />
@@ -31,7 +34,7 @@ export default function PriceChart({ data }: PriceChartProps) {
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
             labelStyle={{ color: '#374151', fontWeight: 'bold', marginBottom: '4px' }}
             itemStyle={{ color: '#111827', fontSize: '14px' }}
-            formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+            formatter={(value: number) => [formatPrice(value), 'Price']}
           />
           <Line 
             type="monotone" 

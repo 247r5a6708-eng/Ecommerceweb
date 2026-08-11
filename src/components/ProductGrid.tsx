@@ -19,9 +19,10 @@ interface ProductGridProps {
   compareProducts?: Product[];
   onToggleCompare?: (product: Product) => void;
   onProductClick?: (product: Product) => void;
+  onNotifyMe?: (product: Product) => void;
 }
 
-export default function ProductGrid({ onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick }: ProductGridProps) {
+export default function ProductGrid({ onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick, onNotifyMe }: ProductGridProps) {
   const filteredProducts = useMemo(() => {
     let result = products.filter(p => {
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
@@ -80,7 +81,7 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
   }, [filteredProducts, activeCategory]);
 
   return (
-    <div id="products" className="bg-white dark:bg-gray-950 py-8 sm:py-12 transition-colors">
+    <div id="products" className="bg-transparent py-8 sm:py-12 transition-colors relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {isLoading ? (
            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8">
@@ -95,21 +96,30 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
           </div>
         ) : (
           <motion.div 
-            layout
+            key={`${activeCategory}-${activeType}-${sortOption}-${searchQuery}`}
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+            initial="hidden"
+            animate="show"
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8"
           >
             <AnimatePresence mode="popLayout">
-              {filteredProducts.map((product, index) => (
+              {filteredProducts.map((product) => (
                 <motion.div
                   layout
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                  transition={{ 
-                    duration: 0.5, 
-                    delay: index * 0.05, 
-                    ease: [0.25, 0.1, 0.25, 1.0] 
+                  variants={{
+                    hidden: { opacity: 0, y: 30, scale: 0.95 },
+                    show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] } },
+                    exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
                   }}
+                  exit="exit"
                   key={product.id}
                 >
                   <ProductCard 
@@ -122,6 +132,7 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
                     isCompared={compareProducts?.some(p => p.id === product.id)}
                     onToggleCompare={onToggleCompare}
                     onProductClick={onProductClick}
+                    onNotifyMe={onNotifyMe}
                   />
                 </motion.div>
               ))}
@@ -131,13 +142,31 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
 
         {/* You Might Also Like Section */}
         {!isLoading && recommendedProducts.length > 0 && (
-          <div className="mt-24 border-t border-gray-100 dark:border-gray-800 pt-16">
+          <div className="mt-24 border-t border-gray-100 dark:border-white/5 pt-16">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center sm:text-left">
               You Might Also Like
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8">
+            <motion.div 
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8"
+              variants={{
+                hidden: { opacity: 0 },
+                show: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.1 }
+                }
+              }}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-50px" }}
+            >
               {recommendedProducts.map((product) => (
-                <div key={`rec-${product.id}`}>
+                <motion.div 
+                  key={`rec-${product.id}`}
+                  variants={{
+                    hidden: { opacity: 0, y: 30, scale: 0.95 },
+                    show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] } }
+                  }}
+                >
                   <ProductCard 
                     product={product} 
                     onAddToCart={onAddToCart} 
@@ -148,10 +177,11 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
                     isCompared={compareProducts?.some(p => p.id === product.id)}
                     onToggleCompare={onToggleCompare}
                     onProductClick={onProductClick}
+                    onNotifyMe={onNotifyMe}
                   />
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         )}
       </div>

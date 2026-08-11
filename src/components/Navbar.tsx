@@ -1,20 +1,24 @@
-import { ShoppingCart, Menu, X, Search, Heart, Moon, Sun, User } from 'lucide-react';
-import { useState } from 'react';
+import { ShoppingBag, User, Search, Menu, X, Heart, Settings, LogOut, Package, CreditCard, Scale, Sun, Moon, Mic, MicOff } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { categories, products } from '../data';
+import { categories } from '../data';
+import { useCurrency, Currency } from '../contexts/CurrencyContext';
 
 interface NavbarProps {
   cartItemCount: number;
   onOpenCart: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  wishlistItemCount: number;
   onOpenProfile: () => void;
   onOpenWishlist: () => void;
+  wishlistItemCount?: number;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
   activeCategory: string;
   onCategoryChange: (category: string) => void;
+  compareCount?: number;
+  onOpenCompare?: () => void;
+  onAddToast?: (toast: { title: string; message: string; type: 'success' | 'error' | 'info' }) => void;
 }
 
 export default function Navbar({ 
@@ -22,53 +26,146 @@ export default function Navbar({
   onOpenCart, 
   searchQuery, 
   onSearchChange, 
-  wishlistItemCount, 
   onOpenProfile, 
-  onOpenWishlist, 
-  isDarkMode, 
+  onOpenWishlist,
+  wishlistItemCount = 0,
+  isDarkMode,
   onToggleDarkMode,
   activeCategory,
-  onCategoryChange
+  onCategoryChange,
+  compareCount = 0,
+  onOpenCompare,
+  onAddToast
 }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    const saved = localStorage.getItem('recentSearches');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const { currency, setCurrency } = useCurrency();
 
-  const handleSearchSubmit = (query: string) => {
-    if (!query.trim()) return;
-    const newRecent = [query, ...recentSearches.filter(q => q !== query)].slice(0, 3);
-    setRecentSearches(newRecent);
-    localStorage.setItem('recentSearches', JSON.stringify(newRecent));
+  useEffect(() => {
+    // Initialize speech recognition if supported
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        onSearchChange(transcript);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        if (event.error === 'not-allowed') {
+          if (onAddToast) {
+            onAddToast({ title: 'Microphone Access Denied', message: 'Please allow microphone access to use voice search.', type: 'error' });
+          } else {
+            alert("Please allow microphone access to use voice search.");
+          }
+        } else if (event.error === 'network') {
+          if (onAddToast) {
+            onAddToast({ title: 'Network Error', message: 'Voice search requires an active internet connection or is not supported in this environment.', type: 'error' });
+          } else {
+            alert("Voice search requires an active internet connection.");
+          }
+        }
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, [onSearchChange]);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      onSearchChange(''); // Clear current search when starting new voice input
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
   };
 
-  const searchSuggestions = searchQuery.trim() === '' 
-    ? [] 
-    : products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5);
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white/80 dark:bg-gray-950/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <nav className={`sticky top-0 z-40 w-full transition-all duration-500 ${
+      isScrolled 
+        ? 'bg-white/70 dark:bg-[#030305]/70 backdrop-blur-xl border-b border-gray-200 dark:border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' 
+        : 'bg-transparent border-b border-transparent dark:border-transparent'
+    }`}>
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-transparent pointer-events-none opacity-50" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => onCategoryChange('All')}>
-            <a href="#" className="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white">
-              LUMIN<span className="text-gray-400">A</span>
-            </a>
+          <div className="flex-shrink-0 flex items-center cursor-pointer group" onClick={() => onCategoryChange('All')}>
+            <div className="relative w-10 h-10 mr-3 flex items-center justify-center overflow-visible">
+              <motion.svg 
+                viewBox="0 0 100 100" 
+                className="w-full h-full drop-shadow-[0_0_10px_rgba(59,130,246,0.6)]"
+                initial={{ rotate: 0 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <defs>
+                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="50%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                  <linearGradient id="logo-gradient-inner" x1="100%" y1="100%" x2="0%" y2="0%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#a855f7" />
+                  </linearGradient>
+                </defs>
+                <motion.polygon 
+                  points="50,5 95,25 95,75 50,95 5,75 5,25" 
+                  fill="none" 
+                  stroke="url(#logo-gradient)" 
+                  strokeWidth="4"
+                  animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.polygon 
+                  points="50,15 85,32 85,68 50,85 15,68 15,32" 
+                  fill="url(#logo-gradient-inner)"
+                  opacity="0.2"
+                  animate={{ rotate: [-10, 10, -10] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ transformOrigin: "50px 50px" }}
+                />
+                <polygon points="50,25 75,40 75,60 50,75 25,60 25,40" fill="url(#logo-gradient)" opacity="0.8" />
+                <polygon points="50,35 65,45 65,55 50,65 35,55 35,45" fill="#fff" />
+              </motion.svg>
+              <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full pointer-events-none group-hover:bg-purple-500/30 transition-colors duration-500" />
+            </div>
+            <span className="text-3xl font-extrabold tracking-tighter text-gray-900 dark:text-white flex items-center">
+              LUM<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">IN</span>A
+            </span>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-2 items-center">
+          <div className="hidden md:flex space-x-1 items-center bg-white/50 dark:bg-white/5 p-1 rounded-full backdrop-blur-md border border-gray-200 dark:border-white/10">
             {categories.slice(1).map(category => (
               <button
                 key={category}
                 onClick={() => onCategoryChange(category)}
-                className={`font-medium px-4 py-2 rounded-full transition-all duration-200 ${
+                className={`font-bold px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md text-sm tracking-wide ${
                   activeCategory === category 
-                    ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-800' 
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                    ? 'text-white bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 dark:text-black shadow-md' 
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10'
                 }`}
               >
                 {category}
@@ -77,119 +174,102 @@ export default function Navbar({
           </div>
 
           {/* Icons */}
-          <div className="flex items-center space-x-4 md:space-x-5">
-            <div className="hidden sm:flex items-center relative group">
+          <div className="flex items-center space-x-2 md:space-x-3">
+            <div className="hidden lg:flex items-center relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+                <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               </div>
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search matrix..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearchSubmit(searchQuery);
-                    setIsSearchFocused(false);
-                    e.currentTarget.blur();
-                  }
-                }}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                className="block w-full pl-9 pr-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white focus:border-gray-900 dark:focus:border-white transition-colors bg-gray-50 dark:bg-gray-900 dark:text-white"
+                className="block w-64 pl-10 pr-10 py-2 bg-gray-100 dark:bg-white/5 border border-transparent dark:border-white/10 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 focus:bg-white dark:focus:bg-white/10 transition-all text-gray-900 dark:text-white font-medium"
               />
-              
-              {isSearchFocused && searchQuery.trim() === '' && recentSearches.length > 0 && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
-                  <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recent Searches</p>
-                  </div>
-                  {recentSearches.map(query => (
-                    <button 
-                      key={query}
-                      onClick={() => {
-                         onSearchChange(query);
-                         setIsSearchFocused(false);
-                      }}
-                      className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center space-x-3 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
-                    >
-                      <Search className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{query}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {isSearchFocused && searchSuggestions.length > 0 && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
-                  {searchSuggestions.map(product => (
-                    <button 
-                      key={product.id}
-                      onClick={() => {
-                         onSearchChange(product.name);
-                         handleSearchSubmit(product.name);
-                         setIsSearchFocused(false);
-                      }}
-                      className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center space-x-3 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
-                    >
-                      <img src={product.image} alt={product.name} className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{product.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">${product.price.toFixed(2)}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <button
+                onClick={toggleListening}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors"
+                title={isListening ? "Stop listening" : "Start voice search"}
+              >
+                {isListening ? (
+                  <Mic className="h-4 w-4 text-red-500 animate-pulse" />
+                ) : (
+                  <MicOff className="h-4 w-4" />
+                )}
+              </button>
             </div>
             
-            <button 
+            {compareCount > 0 && onOpenCompare && (
+              <button 
+                onClick={onOpenCompare}
+                className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors relative"
+                aria-label="Compare"
+              >
+                <Scale className="w-5 h-5" />
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full shadow-sm">
+                  {compareCount}
+                </span>
+              </button>
+            )}
+            
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              className="bg-transparent text-sm font-medium text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-0 cursor-pointer appearance-none px-2 py-1"
+            >
+              <option value="USD" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">USD</option>
+              <option value="EUR" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">EUR</option>
+              <option value="GBP" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">GBP</option>
+              <option value="INR" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">INR</option>
+            </select>
+            
+            <button
               onClick={onToggleDarkMode}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 relative" 
-              aria-label="Toggle dark mode"
+              className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              aria-label="Toggle Dark Mode"
             >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-            
-            <button 
-              onClick={onOpenProfile}
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 relative hidden sm:block" 
-              aria-label="User Profile"
-            >
-              <User className="w-5 h-5" />
             </button>
 
             <button 
               onClick={onOpenWishlist}
-              className="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 relative" 
+              className="p-2 text-gray-600 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition-colors relative"
               aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
               {wishlistItemCount > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-950">
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full shadow-sm">
                   {wishlistItemCount}
                 </span>
               )}
             </button>
 
             <button 
-              className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 relative"
-              onClick={onOpenCart}
-              aria-label="Open cart"
+              onClick={onOpenProfile}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              aria-label="User Profile"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <User className="w-5 h-5" />
+            </button>
+
+            <button 
+              onClick={onOpenCart}
+              className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors relative group"
+              aria-label="Cart"
+            >
+              <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
               {cartItemCount > 0 && (
-                <span className="absolute top-0 right-0 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-950">
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.8)]">
                   {cartItemCount}
                 </span>
               )}
             </button>
-            
-            {/* Mobile menu button */}
-            <div className="md:hidden flex items-center">
-              <button 
+
+            <div className="md:hidden flex items-center ml-2">
+              <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none"
+                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -198,79 +278,35 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-gray-800 overflow-hidden"
+            className="md:hidden bg-white dark:bg-[#030305] border-b border-gray-100 dark:border-white/10"
           >
-            <div className="px-4 pt-2 pb-6 space-y-1 sm:px-6">
+            <div className="px-4 pt-2 pb-6 space-y-1">
               <div className="mb-4 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearchSubmit(searchQuery);
-                      setIsMobileMenuOpen(false);
-                      e.currentTarget.blur();
-                    }
-                  }}
-                  className="block w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md text-base placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-white focus:border-gray-900 dark:focus:border-white bg-gray-50 dark:bg-gray-900 dark:text-white"
+                  className="block w-full pl-4 pr-10 py-3 border border-gray-200 dark:border-white/10 rounded-xl text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white"
                 />
-                
-                {searchQuery.trim() === '' && recentSearches.length > 0 && (
-                  <div className="mt-2 w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden z-50">
-                    <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recent Searches</p>
-                    </div>
-                    {recentSearches.map(query => (
-                      <button 
-                        key={query}
-                        onClick={() => {
-                           onSearchChange(query);
-                           setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center space-x-3 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
-                      >
-                        <Search className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{query}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                
-                {searchQuery.trim() !== '' && searchSuggestions.length > 0 && (
-                  <div className="mt-2 w-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden z-50">
-                    {searchSuggestions.map(product => (
-                      <button 
-                        key={product.id}
-                        onClick={() => {
-                           onSearchChange(product.name);
-                           handleSearchSubmit(product.name);
-                           setIsMobileMenuOpen(false);
-                        }}
-                        className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center space-x-3 transition-colors border-b border-gray-50 dark:border-gray-800/50 last:border-0"
-                      >
-                        <img src={product.image} alt={product.name} className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
-                        <div className="flex-1 overflow-hidden">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{product.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">${product.price.toFixed(2)}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <button
+                  onClick={toggleListening}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors"
+                  title={isListening ? "Stop listening" : "Start voice search"}
+                >
+                  {isListening ? (
+                    <Mic className="h-4 w-4 text-red-500 animate-pulse" />
+                  ) : (
+                    <MicOff className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-              <a href="#" onClick={(e) => { e.preventDefault(); onOpenProfile(); setIsMobileMenuOpen(false); }} className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800">Profile & Orders</a>
               {categories.slice(1).map(category => (
                 <button
                   key={category}
@@ -278,10 +314,10 @@ export default function Navbar({
                     onCategoryChange(category);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                  className={`block w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-colors ${
                     activeCategory === category 
-                      ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' 
-                      : 'text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400' 
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
                   }`}
                 >
                   {category}

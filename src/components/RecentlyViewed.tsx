@@ -25,7 +25,7 @@ export default function RecentlyViewed({
   if (products.length === 0) return null;
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900/50 py-12 border-t border-gray-100 dark:border-gray-800">
+    <div className="bg-gray-50 dark:bg-[#121216]/50 py-12 border-t border-gray-100 dark:border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
           Recently Viewed
