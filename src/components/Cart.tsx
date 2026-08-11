@@ -3,6 +3,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Minus, Plus, ShoppingBag, CheckCircle2, Loader2, CreditCard, MapPin, Truck } from 'lucide-react';
 import { CartItem, Order, Address, ToastType } from '../types';
+import SafeProductImage from './SafeProductImage';
 
 interface CartProps {
   isOpen: boolean;
@@ -125,10 +126,11 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
             {items.map((item) => (
               <li key={item.id} className="flex py-6">
                 <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/10">
-                  <img
+                  <SafeProductImage
                     src={item.image}
                     alt={item.name}
-                    className="h-full w-full object-cover object-center"
+                    className="h-full w-full"
+                    imageClassName="h-full w-full object-cover object-center"
                   />
                 </div>
 

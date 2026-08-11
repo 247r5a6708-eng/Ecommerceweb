@@ -26,7 +26,6 @@ import { Product, CartItem, Order, Review, ToastType } from './types';
 import { products } from './data';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import * as firestoreService from './lib/firestore';
 
 export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -147,9 +146,6 @@ export default function App() {
       ...prev,
       [productId]: [...(prev[productId] || []), newReview],
     }));
-    if (firebaseUser) {
-      firestoreService.saveReview(productId, { ...newReview, userId: firebaseUser.uid });
-    }
   };
 
   useEffect(() => {
@@ -187,34 +183,14 @@ export default function App() {
   }, [reviews]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user);
       if (user) {
-        // Fetch data from Firestore
-        const profile = await firestoreService.getUserProfile(user.uid);
-        if (profile) {
-          setUserProfile(prev => ({
-            ...prev,
-            ...profile,
-            name: user.displayName || profile.name || prev.name,
-            email: user.email || profile.email || prev.email,
-          }));
-        } else {
-          setUserProfile(prev => ({
-            ...prev,
-            name: user.displayName || prev.name,
-            email: user.email || prev.email,
-          }));
-        }
-
-        const fbOrders = await firestoreService.getUserOrders(user.uid);
-        if (fbOrders.length > 0) setOrders(fbOrders);
-
-        const fbWishlist = await firestoreService.getUserWishlist(user.uid);
-        if (fbWishlist.length > 0) setWishlistItems(fbWishlist);
-
-        const fbWallet = await firestoreService.getUserWallet(user.uid);
-        if (fbWallet.length > 0) setWalletItems(fbWallet);
+        setUserProfile(prev => ({
+          ...prev,
+          name: user.displayName || prev.name,
+          email: user.email || prev.email,
+        }));
       }
     });
     return () => unsubscribe();
@@ -293,9 +269,6 @@ export default function App() {
 
   const handlePlaceOrder = (order: Order) => {
     setOrders(prev => [order, ...prev]);
-    if (firebaseUser) {
-       firestoreService.saveOrder(firebaseUser.uid, order);
-    }
     
     // Add to digital wallet
     const newWalletItems = order.items.map(item => {
@@ -306,17 +279,14 @@ export default function App() {
         id: Math.random().toString(36).substr(2, 9),
         product: item,
         purchaseDate: order.date,
-        warrantyStatus: 'Active' as const,
+        warrantyStatus: 'Active',
         warrantyExpiry: d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
         serialNumber: 'SN-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-        status: 'In Use' as const
+        status: 'In Use'
       };
     });
     
     setWalletItems(prev => [...newWalletItems, ...prev]);
-    if (firebaseUser) {
-      newWalletItems.forEach(wi => firestoreService.saveWalletProduct(firebaseUser.uid, wi));
-    }
   };
 
   const handleCancelOrder = (orderId: string) => {
@@ -325,9 +295,6 @@ export default function App() {
         ? { ...order, status: 'cancelled' }
         : order
     ));
-    if (firebaseUser) {
-      firestoreService.updateOrderState(firebaseUser.uid, orderId, 'cancelled');
-    }
     addToast({
       title: 'Order Cancelled',
       message: `Order #${orderId} has been successfully cancelled.`,

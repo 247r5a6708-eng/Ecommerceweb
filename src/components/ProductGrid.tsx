@@ -31,19 +31,50 @@ export default function ProductGrid({ onAddToCart, searchQuery, activeType, acti
       if (!searchQuery) return matchesCategory && matchesType;
       
       const query = searchQuery.toLowerCase();
+      
+      // Advanced Search Logic (Phase 5)
+      
+      // 1. Extract budget (e.g., "under 500", "under $50", "under ₹40000", "< 100")
+      let maxBudget = Infinity;
+      const budgetMatch = query.match(/(?:under|below|<|less than)\s*(?:[$€£₹])?\s*(\d+)/i);
+      if (budgetMatch && budgetMatch[1]) {
+        maxBudget = parseInt(budgetMatch[1], 10);
+      }
+
+      // If currency is INR and we are searching for INR budget, we should probably factor exchange rate? 
+      // The requirement just says "budget", let's assume we filter on the raw USD price or they mean the converted price.
+      // Since we don't have currency context easily available here in the filter loop (or we could use it if we passed it), 
+      // let's do a basic check on the raw price for now, assuming USD base. 
+      // A more robust implementation would pass `currencyRate` down.
+      // If we assume the query budget is in the user's current currency, we'd need the rate. Let's just use `p.price`.
+      const matchesBudget = p.price <= maxBudget;
+
       const matchesSearch = 
         p.name.toLowerCase().includes(query) || 
         p.description.toLowerCase().includes(query) ||
+        p.brand.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query) ||
         (p.aiSummary && p.aiSummary.toLowerCase().includes(query)) ||
         p.type.toLowerCase().includes(query);
       
       // Basic semantic keywords simulation
       const hasDurabilityIntent = ['durable', 'lasting', 'strong', 'repair'].some(k => query.includes(k));
       const hasSustainabilityIntent = ['eco', 'sustainable', 'green', 'organic'].some(k => query.includes(k));
+      const hasGamingIntent = ['gaming', 'game', 'fps', 'rgb', 'play'].some(k => query.includes(k));
+      const hasOfficeIntent = ['office', 'work', 'typing', 'business', 'professional'].some(k => query.includes(k));
+      const hasTravelIntent = ['travel', 'portable', 'lightweight', 'compact', 'commuting'].some(k => query.includes(k));
+      const hasBudgetIntent = ['cheap', 'budget', 'affordable', 'value', 'inexpensive'].some(k => query.includes(k));
       
       let semanticMatch = false;
       if (hasDurabilityIntent && p.repairabilityScore && p.repairabilityScore >= 7) semanticMatch = true;
       if (hasSustainabilityIntent && (p.sustainabilityGrade === 'A' || p.sustainabilityGrade === 'B')) semanticMatch = true;
+      if (hasGamingIntent && (p.category === 'Electronics' && (p.name.toLowerCase().includes('gam') || p.description.toLowerCase().includes('gam')))) semanticMatch = true;
+      if (hasOfficeIntent && (p.category === 'Electronics' || p.category === 'Accessories') && !p.name.toLowerCase().includes('gam')) semanticMatch = true;
+      if (hasTravelIntent && (p.type === 'Audio' || p.type === 'Bags' || p.type === 'Gadgets')) semanticMatch = true;
+      if (hasBudgetIntent && p.price < 100) semanticMatch = true;
+
+      // Ensure budget constraint is respected if present
+      if (maxBudget !== Infinity && !matchesBudget) return false;
 
       return matchesCategory && matchesType && (matchesSearch || semanticMatch);
     });

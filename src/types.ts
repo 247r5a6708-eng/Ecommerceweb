@@ -10,6 +10,61 @@ export interface ToastType {
   type: 'success' | 'info' | 'error';
 }
 
+// --- NEW COMMERCE DATA MODEL ---
+
+export interface Brand {
+  id: string;
+  name: string;
+  description?: string;
+  logoUrl?: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  parentId?: string;
+}
+
+export interface ProductImage {
+  id: string;
+  productId: string;
+  modelId?: string;
+  variantId?: string;
+  url: string;
+  source?: string;
+  altText?: string;
+  width?: number;
+  height?: number;
+  verified: boolean;
+  verificationStatus: 'verified' | 'rejected' | 'pending' | 'unavailable';
+  imageHash?: string;
+  createdAt: string;
+}
+
+export interface ProductSpecification {
+  name: string;
+  value: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  sku: string;
+  price: number;
+  inventoryCount: number;
+  attributes: Record<string, string>; // e.g., { color: 'Red', size: 'M' }
+}
+
+export interface Compatibility {
+  id: string;
+  sourceProductId: string;
+  targetProductId: string;
+  type: 'compatible' | 'incompatible' | 'unknown';
+  notes?: string;
+}
+
+// Modifying existing Product interface to be backwards compatible but extensible
 export interface Product {
   id: string;
   name: string;
@@ -21,6 +76,7 @@ export interface Product {
   category: string;
   type: string;
   image: string;
+  
   rating: number;
   priceHistory?: PriceHistoryPoint[];
   trustScore?: number;
@@ -33,6 +89,22 @@ export interface Product {
   fitDetails?: string;
   sizeGuide?: string;
   inStock?: boolean;
+  
+  // Phase 4 - Product Catalog Quality extensions
+  sku?: string;
+  specifications?: ProductSpecification[];
+  dimensions?: string;
+  weight?: string;
+  materials?: string[];
+  colors?: string[];
+  returnPolicy?: string;
+  availability?: string;
+  inventory?: number;
+  seller?: string;
+  discount?: number;
+  taxInfo?: string;
+  shippingInfo?: string;
+  images?: ProductImage[]; // Extended image gallery
 }
 
 export interface CartItem extends Product {
@@ -46,6 +118,8 @@ export interface Review {
   rating: number;
   text: string;
   date: string;
+  verifiedPurchase?: boolean;
+  helpfulVotes?: number;
 }
 
 export interface Address {
@@ -76,15 +150,30 @@ export interface WalletProduct {
   status: 'In Use' | 'Needs Repair' | 'Ready for Trade-in';
 }
 
+export interface OrderItem extends CartItem {}
+
 export interface Order {
   id: string;
   date: string;
-  items: CartItem[];
+  items: OrderItem[];
   total: number;
-  status: 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned' | 'refunded';
   address?: Address;
   paymentMethod?: string;
   expectedDelivery?: string;
   deliveryConfidence?: number; // percentage
+  shipping?: number;
+  tax?: number;
+  subtotal?: number;
+  userId?: string;
+}
+
+// Phase 21 - Returns
+export interface ReturnRequest {
+  id: string;
+  orderId: string;
+  itemId: string;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Picked up' | 'Refund processing' | 'Refunded' | 'Not eligible';
 }
 

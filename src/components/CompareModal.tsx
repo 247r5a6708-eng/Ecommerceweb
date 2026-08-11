@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { X, Scale, Star, ShoppingBag } from 'lucide-react';
 import { Product, Review } from '../types';
+import SafeProductImage from './SafeProductImage';
 
 interface CompareModalProps {
   isOpen: boolean;
@@ -73,10 +74,11 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
                         <X className="w-4 h-4" />
                       </button>
                       <div className="aspect-[4/3] bg-gray-100 dark:bg-white/10 rounded-xl overflow-hidden mb-4 relative">
-                        <img 
+                        <SafeProductImage 
                           src={product.image} 
                           alt={product.name} 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full"
+                          imageClassName="w-full h-full object-cover"
                         />
                       </div>
                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{product.category}</p>

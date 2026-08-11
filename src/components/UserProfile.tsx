@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { X, Clock, Package, CheckCircle2, User, Mail, MapPin, Edit2, LogOut, XCircle, Phone, Image as ImageIcon, Wallet, Shield, FileText, Wrench } from 'lucide-react';
 import { Order, UserProfileData, WalletProduct } from '../types';
+import SafeProductImage from './SafeProductImage';
 
 interface UserProfileProps {
   isOpen: boolean;
@@ -366,10 +367,11 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                               <ul className="space-y-3">
                                 {order.items.map((item) => (
                                   <li key={item.id} className="flex items-center text-sm">
-                                    <img
+                                    <SafeProductImage
                                       src={item.image}
                                       alt={item.name}
-                                      className="w-12 h-12 rounded-lg object-cover border border-gray-100 dark:border-white/10 mr-3"
+                                      className="w-12 h-12 mr-3 rounded-lg border border-gray-100 dark:border-white/10"
+                                      imageClassName="rounded-lg object-cover"
                                     />
                                     <div className="flex-1 min-w-0">
                                       <p className="text-gray-900 dark:text-gray-200 font-medium truncate">{item.name}</p>
@@ -412,7 +414,12 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                       walletItems.map((item) => (
                         <div key={item.id} className="bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-purple-500/5 dark:hover:shadow-purple-500/10 hover:scale-[1.02] transition-all duration-300">
                           <div className="p-4 flex items-start space-x-4">
-                            <img src={item.product.image} alt={item.product.name} className="w-16 h-16 rounded-lg object-cover bg-gray-100" />
+                            <SafeProductImage 
+                              src={item.product.image} 
+                              alt={item.product.name} 
+                              className="w-16 h-16 bg-gray-100 rounded-lg"
+                              imageClassName="w-16 h-16 rounded-lg object-cover" 
+                            />
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">{item.product.name}</h4>
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">SN: {item.serialNumber}</p>

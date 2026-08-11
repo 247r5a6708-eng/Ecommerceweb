@@ -4,6 +4,7 @@ import { Product, Review } from '../types';
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
+import SafeProductImage from './SafeProductImage';
 
 interface QuickViewModalProps {
   product: Product;
@@ -52,10 +53,11 @@ export default function QuickViewModal({ product, isOpen, onClose, onAddToCart, 
             </button>
 
             <div className="md:w-1/2 bg-gray-100 dark:bg-white/10 relative">
-              <img 
+              <SafeProductImage 
                 src={product.image} 
                 alt={product.name} 
-                className="w-full h-64 md:h-full object-cover"
+                className="w-full h-64 md:h-full"
+                imageClassName="w-full h-full object-cover"
               />
             </div>
 

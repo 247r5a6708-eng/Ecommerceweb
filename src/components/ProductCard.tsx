@@ -6,6 +6,8 @@ import PriceChart from './PriceChart';
 import QuickViewModal from './QuickViewModal';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
 
+import SafeProductImage from './SafeProductImage';
+
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
@@ -122,13 +124,14 @@ export default function ProductCard({ product, onAddToCart, isWishlisted, onTogg
           style={{ transform: "translateZ(30px)" }}
         >
           {product.image ? (
-            <img 
+            <SafeProductImage 
               src={product.image} 
               alt={product.name} 
+              className="absolute inset-0 w-full h-full"
               style={{
                 transform: isHoveringImage ? 'scale(1.1)' : 'scale(1)'
               }}
-              className="h-full w-full object-cover object-center transition-transform duration-700 ease-out"
+              imageClassName="h-full w-full object-cover object-center transition-transform duration-700 ease-out"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-white/10 text-gray-400">

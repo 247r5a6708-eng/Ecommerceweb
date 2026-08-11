@@ -68,9 +68,9 @@ export default function Navbar({
           }
         } else if (event.error === 'network') {
           if (onAddToast) {
-            onAddToast({ title: 'Network Error', message: 'Voice search requires an active internet connection or is not supported in this environment.', type: 'error' });
+            onAddToast({ title: 'Speech Recognition Unavailable', message: 'Voice search is not supported by your browser (e.g., Brave) or requires an internet connection.', type: 'error' });
           } else {
-            alert("Voice search requires an active internet connection.");
+            alert("Voice search is not supported by your browser or requires an internet connection.");
           }
         }
         setIsListening(false);
