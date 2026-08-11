@@ -174,7 +174,7 @@ export default function Navbar({
           </div>
 
           {/* Icons */}
-          <div className="flex items-center space-x-2 md:space-x-3">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
             <div className="hidden lg:flex items-center relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
@@ -203,7 +203,7 @@ export default function Navbar({
             {compareCount > 0 && onOpenCompare && (
               <button 
                 onClick={onOpenCompare}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors relative"
+                className="hidden sm:flex p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors relative"
                 aria-label="Compare"
               >
                 <Scale className="w-5 h-5" />
@@ -213,20 +213,22 @@ export default function Navbar({
               </button>
             )}
             
-            <select
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value as Currency)}
-              className="bg-transparent text-sm font-medium text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-0 cursor-pointer appearance-none px-2 py-1"
-            >
-              <option value="USD" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">USD</option>
-              <option value="EUR" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">EUR</option>
-              <option value="GBP" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">GBP</option>
-              <option value="INR" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">INR</option>
-            </select>
+            <div className="hidden sm:block">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as Currency)}
+                className="bg-transparent text-sm font-medium text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-0 cursor-pointer appearance-none px-2 py-1"
+              >
+                <option value="USD" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">USD</option>
+                <option value="EUR" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">EUR</option>
+                <option value="GBP" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">GBP</option>
+                <option value="INR" className="bg-white dark:bg-[#121216] text-gray-900 dark:text-white">INR</option>
+              </select>
+            </div>
             
             <button
               onClick={onToggleDarkMode}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="hidden sm:flex p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               aria-label="Toggle Dark Mode"
             >
               {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -234,7 +236,7 @@ export default function Navbar({
 
             <button 
               onClick={onOpenWishlist}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition-colors relative"
+              className="hidden sm:flex p-2 text-gray-600 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition-colors relative"
               aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
@@ -247,7 +249,7 @@ export default function Navbar({
 
             <button 
               onClick={onOpenProfile}
-              className="p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="hidden sm:flex p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               aria-label="User Profile"
             >
               <User className="w-5 h-5" />
@@ -266,14 +268,12 @@ export default function Navbar({
               )}
             </button>
 
-            <div className="md:hidden flex items-center ml-2">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 -mr-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
       </div>
@@ -284,10 +284,10 @@ export default function Navbar({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white dark:bg-[#030305] border-b border-gray-100 dark:border-white/10"
+            className="md:hidden bg-white dark:bg-[#030305] border-b border-gray-100 dark:border-white/10 overflow-hidden"
           >
-            <div className="px-4 pt-2 pb-6 space-y-1">
-              <div className="mb-4 relative">
+            <div className="px-4 pt-4 pb-6 space-y-4">
+              <div className="relative">
                 <input
                   type="text"
                   placeholder="Search..."
@@ -307,22 +307,80 @@ export default function Navbar({
                   )}
                 </button>
               </div>
-              {categories.slice(1).map(category => (
-                <button
-                  key={category}
-                  onClick={() => {
-                    onCategoryChange(category);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`block w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-colors ${
-                    activeCategory === category 
-                      ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400' 
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
-                  }`}
+              
+              <div className="grid grid-cols-2 gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); onOpenProfile(); }}
+                  className="flex items-center justify-center space-x-2 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 font-medium"
                 >
-                  {category}
+                  <User className="w-5 h-5" />
+                  <span>Profile</span>
                 </button>
-              ))}
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); onOpenWishlist(); }}
+                  className="flex items-center justify-center space-x-2 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 font-medium relative"
+                >
+                  <Heart className="w-5 h-5" />
+                  <span>Wishlist</span>
+                  {wishlistItemCount > 0 && (
+                    <span className="absolute top-2 right-4 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-pink-500 rounded-full">
+                      {wishlistItemCount}
+                    </span>
+                  )}
+                </button>
+                {compareCount > 0 && onOpenCompare && (
+                  <button 
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenCompare(); }}
+                    className="flex items-center justify-center space-x-2 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 font-medium relative"
+                  >
+                    <Scale className="w-5 h-5" />
+                    <span>Compare</span>
+                    <span className="absolute top-2 right-4 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-blue-500 rounded-full">
+                      {compareCount}
+                    </span>
+                  </button>
+                )}
+                <button 
+                  onClick={onToggleDarkMode}
+                  className="flex items-center justify-center space-x-2 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 font-medium"
+                >
+                  {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between px-2 pb-2">
+                <span className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Categories</span>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value as Currency)}
+                  className="bg-gray-100 dark:bg-white/10 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-0 appearance-none px-3 py-1.5"
+                >
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="INR">INR</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                {categories.slice(1).map(category => (
+                  <button
+                    key={category}
+                    onClick={() => {
+                      onCategoryChange(category);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`block w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-colors ${
+                      activeCategory === category 
+                        ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}

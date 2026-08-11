@@ -34,7 +34,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
   const activeSortLabel = sortOptions.find(opt => opt.value === sortOption)?.label || 'Sort';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 relative z-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Curated Collection</h2>
@@ -43,7 +43,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
         
         <div className="mt-6 md:mt-0 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           {/* Type Filter */}
-          <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 hide-scrollbar w-full sm:w-auto">
+          <div className="w-[100vw] -ml-4 pl-4 pr-4 sm:w-auto sm:-ml-0 sm:pl-0 sm:pr-0 overflow-x-auto pb-2 hide-scrollbar">
             <div className="flex space-x-2 md:space-x-4 min-w-max">
               {availableTypes.map((type) => (
                 <button
@@ -62,7 +62,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
           </div>
 
           {/* Sort Dropdown */}
-          <div className="relative z-10 w-full sm:w-auto" ref={dropdownRef}>
+          <div className="relative z-50 w-full sm:w-auto" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="w-full sm:w-auto flex items-center justify-between bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
