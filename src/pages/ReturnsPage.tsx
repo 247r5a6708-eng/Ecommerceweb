@@ -31,7 +31,7 @@ export default function ReturnsPage() {
     setIsSubmitting(true);
     
     const returnReq = {
-      id: `RET-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+      id: `RET-${crypto.randomUUID().split("-")[0].toUpperCase()}`,
       orderId: selectedOrder.id,
       itemId: selectedItem.id,
       itemName: selectedItem.name,

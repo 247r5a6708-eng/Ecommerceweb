@@ -23,12 +23,8 @@ export default function SafeProductImage({ src, alt, className, imageClassName, 
     }
 
     if (imageObj && imageObj.verificationStatus !== 'verified') {
-       // if we have an imageObj and it's not verified yet, or rejected
-       // we might want to do something, but for now we'll just try to load
-       if (imageObj.verificationStatus === 'rejected' || imageObj.verificationStatus === 'unavailable') {
-         setStatus('error');
-         return;
-       }
+       setStatus('error');
+       return;
     }
 
     setStatus('loading');

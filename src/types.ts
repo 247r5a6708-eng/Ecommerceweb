@@ -121,6 +121,13 @@ export interface StructuredWarranty {
 }
 
 export interface Product {
+  brandId?: string;
+  categoryId?: string;
+  productId?: string;
+  modelId?: string;
+  variantId?: string;
+  compatibility?: string;
+  shipping?: string;
   structuredWarranty?: StructuredWarranty;
   id: string;
   name: string;
@@ -210,6 +217,8 @@ export interface UserProfileData {
 }
 
 export interface WalletProduct {
+  serialNumber?: string;
+  invoiceUrl?: string;
   id: string;
   product: Product;
   purchaseDate: string;

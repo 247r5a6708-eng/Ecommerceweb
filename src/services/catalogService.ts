@@ -1,35 +1,48 @@
-import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
 import { Product } from '../types';
-import { products as mockProducts } from '../data';
+import { products } from '../data';
+import { validateImage } from './imageService';
 
-export const getProducts = async (): Promise<Product[]> => {
-  const snapshot = await getDocs(collection(db, 'products'));
-  if (snapshot.empty) {
-    console.log('No products found in Firestore. Returning mock data or seeding...');
-    return mockProducts;
+export async function validateCatalogImages() {
+  console.log('Starting image audit...');
+  let missing = 0;
+  let broken = 0;
+  
+  for (const product of products) {
+    if (!product.image) {
+      console.warn(`Missing image for product ${product.id}`);
+      missing++;
+      continue;
+    }
+    
+    // In a real app we might await all validations, but for now we just want to expose the capability
+    const isValid = await validateImage(product.image);
+    if (!isValid) {
+      console.warn(`Broken image URL for product ${product.id}: ${product.image}`);
+      broken++;
+    }
   }
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-};
+  
+  console.log(`Image audit complete. Missing: ${missing}, Broken: ${broken}`);
+  return { missing, broken };
+}
 
-export const getProduct = async (id: string): Promise<Product | null> => {
-  const productDoc = await getDoc(doc(db, 'products', id));
-  if (productDoc.exists()) {
-    return { id: productDoc.id, ...productDoc.data() } as Product;
-  }
-  return mockProducts.find(p => p.id === id) || null;
-};
+export function getProductById(id: string): Product | undefined {
+  return products.find(p => p.id === id);
+}
 
-export const seedCatalog = async () => {
+export async function getProducts(): Promise<Product[]> {
+  return products;
+}
+
+export function getAllProducts(): Product[] {
+  return products;
+}
+
+export function getProductsByCategory(category: string): Product[] {
+  return products.filter(p => p.category === category || category === 'All');
+}
+
+export async function seedCatalog() {
   console.log('Seeding catalog...');
-  const productsCol = collection(db, 'products');
-  const snapshot = await getDocs(productsCol);
-  if (!snapshot.empty) {
-    console.log('Catalog already seeded.');
-    return;
-  }
-  for (const product of mockProducts) {
-    await setDoc(doc(db, 'products', product.id), product);
-  }
-  console.log('Catalog seeded successfully.');
-};
+  // Logic would go here to push to firestore if needed
+}

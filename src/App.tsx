@@ -35,6 +35,7 @@ import { useWindowSize } from 'react-use';
 import { useCatalog } from './contexts/CatalogContext';
 import { useUser } from './contexts/UserContext';
 import { useCart } from './hooks/useCart';
+import { useSearch } from './hooks/useSearch';
 import { categories, productTypes } from './data';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -87,9 +88,7 @@ export default function App() {
   const [notifyProduct, setNotifyProduct] = useState<Product | null>(null);
   const [notifyEmail, setNotifyEmail] = useState("");
     
-  const [searchQuery, setSearchQuery] = useState('');
-  const [aiMatchedIds, setAiMatchedIds] = useState<string[] | null>(null);
-  const [isAiSearching, setIsAiSearching] = useState(false);
+  const { searchQuery, setSearchQuery, aiMatchedIds, setAiMatchedIds, isAiSearching } = useSearch();
 
   const [sharedWishlistUserId, setSharedWishlistUserId] = useState<string | null>(null);
   const [sharedWishlistItems, setSharedWishlistItems] = useState<string[]>([]);
@@ -109,49 +108,6 @@ export default function App() {
       }
     }
   }, []);
-
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    if (!searchQuery) {
-      setAiMatchedIds(null);
-      return;
-    }
-
-    const performAISearch = async () => {
-      setIsAiSearching(true);
-      try {
-        const res = await fetch('/api/ai-search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: searchQuery })
-        });
-        const data = await res.json();
-        if (!isCancelled) {
-          setAiMatchedIds(data.matchedIds || []);
-        }
-      } catch (err) {
-        if (!isCancelled) {
-          console.error('AI Search failed', err);
-          setAiMatchedIds(null);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsAiSearching(false);
-        }
-      }
-    };
-
-    const timer = setTimeout(() => {
-      if (!isCancelled) performAISearch();
-    }, 1000);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timer);
-    };
-  }, [searchQuery]);
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [activeType, setActiveType] = useState('All');
@@ -196,7 +152,7 @@ export default function App() {
   };
 
   const addToast = (toast: Omit<ToastType, 'id'>) => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { ...toast, id }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -257,7 +213,7 @@ export default function App() {
   const handleAddReview = (productId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
     const newReview: Review = {
       ...reviewData,
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       date: new Date().toISOString(),
     };
     setReviews(prev => ({
@@ -442,16 +398,23 @@ export default function App() {
     }
 
     const newWalletItems = order.items.map(item => {
-      const d = new Date();
-      d.setFullYear(d.getFullYear() + (item.warrantyInfo?.includes('2 Years') ? 2 : 1));
+      const d = new Date(order.date);
+      let months = 12;
+      if (item.structuredWarranty) {
+        months = item.structuredWarranty.durationMonths;
+      } else if (item.warrantyInfo?.includes('2 Years')) {
+        months = 24;
+      }
+      d.setMonth(d.getMonth() + months);
       
       return {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         product: item,
         purchaseDate: order.date,
         warrantyStatus: 'Active' as const,
         warrantyExpiry: d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
-        status: 'In Use' as const
+        status: 'In Use' as const,
+        serialNumber: 'Serial number pending'
       };
     });
     

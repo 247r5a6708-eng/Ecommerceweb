@@ -82,7 +82,7 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
 
     setTimeout(() => {
       const newOrder: Order = {
-        id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+        id: crypto.randomUUID().split("-")[0].toUpperCase(),
         date: new Date().toISOString(),
         items: [...items],
         total: totalAmount,
