@@ -132,7 +132,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
           return 0;
       }
     });
-  }, [searchQuery, activeType, activeCategory, sortOption, aiMatchedIds]);
+  }, [searchQuery, activeType, activeCategory, sortOption, aiMatchedIds, products]);
 
   const recommendedProducts = useMemo(() => {
     const recommendationPool = products.filter(p => 
@@ -143,7 +143,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
     return recommendationPool
       .sort(() => 0.5 - Math.random())
       .slice(0, 4);
-  }, [filteredProducts, activeCategory]);
+  }, [filteredProducts, activeCategory, products]);
 
   return (
     <div id="products" className="bg-transparent pt-8 pb-32 sm:py-12 transition-colors relative z-10">
