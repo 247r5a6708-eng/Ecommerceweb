@@ -1,4 +1,5 @@
 import React, { Fragment, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence, Reorder } from 'motion/react';
@@ -27,6 +28,7 @@ export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClear
   const [newCollectionName, setNewCollectionName] = useState('');
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   
+  const navigate = useNavigate();
   const [sortOrder, setSortOrder] = useState<'manual' | 'price-asc' | 'price-desc' | 'name-asc'>('manual');
   const [itemToMove, setItemToMove] = useState<string | null>(null);
   const [alertItem, setAlertItem] = useState<string | null>(null);

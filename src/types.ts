@@ -12,6 +12,51 @@ export interface ToastType {
 
 // --- NEW COMMERCE DATA MODEL ---
 
+// --- PHASE 3: PRODUCT IDENTITY ARCHITECTURE ---
+export interface ProductFamily {
+  id: string;
+  brandId: string;
+  name: string;
+  description: string;
+  categoryId: string;
+}
+
+export interface ProductModel {
+  id: string;
+  productId: string;
+  name: string;
+  releaseYear?: number;
+}
+
+export interface SKU {
+  id: string;
+  variantId: string;
+  code: string;
+}
+
+export interface Seller {
+  id: string;
+  name: string;
+  trustScore: number;
+}
+
+export interface InventoryItem {
+  skuId: string;
+  sellerId: string;
+  quantity: number;
+  condition: 'New' | 'Refurbished' | 'Used';
+}
+
+export interface PriceRecord {
+  id: string;
+  skuId: string;
+  sellerId: string;
+  amount: number;
+  currency: string;
+  timestamp: string;
+}
+
+
 export interface Brand {
   id: string;
   name: string;
@@ -65,7 +110,18 @@ export interface Compatibility {
 }
 
 // Modifying existing Product interface to be backwards compatible but extensible
+
+export interface StructuredWarranty {
+  provider: string;
+  startDate?: string;
+  durationMonths: number;
+  coverage: string[];
+  exclusions: string[];
+  status: 'Active' | 'Expired' | 'Pending';
+}
+
 export interface Product {
+  structuredWarranty?: StructuredWarranty;
   id: string;
   name: string;
   brand: string;
@@ -118,6 +174,7 @@ export interface Review {
   isGiftWrapped?: boolean;
   giftMessage?: string;
   giftWrapFee?: number;
+  discount?: number;
   author: string;
   rating: number;
   text: string;
@@ -180,6 +237,7 @@ export interface Order {
   isGiftWrapped?: boolean;
   giftMessage?: string;
   giftWrapFee?: number;
+  discount?: number;
 }
 
 // Phase 21 - Returns

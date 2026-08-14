@@ -34,6 +34,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
   const [fuzzySearchTerm, setFuzzySearchTerm] = useState('');
 
   const filteredProducts = useMemo(() => {
+    console.log("ProductGrid computing:", { activeCategory, activeType, searchQuery, productsCount: products.length, aiMatchedIds });
     let result = products.filter(p => {
       const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
       const matchesType = activeType === 'All' || p.type === activeType;
@@ -45,6 +46,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
     }
 
     if (!searchQuery) {
+       console.log("ProductGrid returning result directly:", result.length);
        return result;
     }
 
@@ -221,7 +223,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
         {/* You Might Also Like Section */}
         {!isLoading && recommendedProducts.length > 0 && (
           <div className="mt-24 border-t border-gray-100 dark:border-white/5 pt-16">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 text-center sm:text-left">
+            <h2 className="text-4xl font-display tracking-tight text-neutral-900 dark:text-white mb-8 text-center sm:text-left">
               You Might Also Like
             </h2>
             <motion.div 

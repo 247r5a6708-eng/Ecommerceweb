@@ -100,7 +100,7 @@ export default function Hero({ onSearch }: HeroProps) {
     <div 
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className={`relative min-h-[90vh] flex items-center justify-center bg-gray-50 dark:bg-[#030305] ${showSuggestions ? "z-[60]" : ""}`}
+      className={`relative min-h-[90vh] flex items-center justify-center bg-transparent ${showSuggestions ? "z-[60]" : ""}`}
     >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* 3D Grid Background */}
@@ -120,10 +120,10 @@ export default function Hero({ onSearch }: HeroProps) {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-6xl md:text-8xl font-normal tracking-tight mb-8 leading-[1.05]"
+            className="text-6xl md:text-8xl font-display tracking-tight mb-8 leading-none"
           >
-            <span className="text-gray-900 dark:text-white">Shop The</span> <br />
-            <span className="text-gray-500 dark:text-gray-400 italic">Future</span>
+            <span className="text-gray-900 dark:text-white font-medium">Shop The</span> <br />
+            <span className="text-neutral-400 dark:text-neutral-500 italic">Future</span>
           </motion.h1>
           
           <motion.form 
@@ -150,7 +150,7 @@ export default function Hero({ onSearch }: HeroProps) {
               </div>
             )}
 
-            <div className={`relative rounded-full p-2 flex flex-col sm:flex-row sm:items-center bg-white dark:bg-[#111] border ${showSuggestions ? "border-gray-300 dark:border-gray-700 shadow-xl" : "border-gray-200 dark:border-gray-800 shadow-sm"}`} ref={suggestionsRef}>
+            <div className={`relative rounded-full p-2 flex flex-col sm:flex-row sm:items-center bg-white/80 dark:bg-[#111]/80 backdrop-blur-xl border ${showSuggestions ? "border-gray-300 dark:border-gray-700 shadow-xl" : "border-gray-200 dark:border-gray-800 shadow-sm"}`} ref={suggestionsRef}>
               <div className="flex items-center w-full relative">
                 <div className="pl-4 sm:pl-6 pointer-events-none absolute left-0 z-10">
                   <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400 dark:text-gray-500" />

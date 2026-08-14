@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Product, Order, WalletProduct, UserProfileData, Review, WishlistCollection } from '../types';
-import { db, auth } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import * as firestoreService from '../lib/firestore';
 
 interface UserContextType {
   wishlistItems: string[];
@@ -39,21 +39,29 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [walletItems, setWalletItems] = useState<WalletProduct[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfileData>(defaultProfile);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      isInitialLoad.current = true;
       if (user) {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setWishlistItems(data.wishlistItems || []);
-          setWishlistCollections(data.wishlistCollections || []);
-          setPriceAlerts(data.priceAlerts || {});
-          setOrders(data.orders || []);
-          setWalletItems(data.walletItems || []);
-          setUserProfile(data.profile || { ...defaultProfile, email: user.email || '' });
-        }
+        // Load data from subcollections and main docs properly
+        const [profile, ordersData, walletData, wishlistData] = await Promise.all([
+          firestoreService.getUserProfile(user.uid),
+          firestoreService.getUserOrders(user.uid),
+          firestoreService.getUserWallet(user.uid),
+          firestoreService.getUserWishlist(user.uid)
+        ]);
+
+        if (profile) setUserProfile(profile);
+        else setUserProfile({ ...defaultProfile, email: user.email || '' });
+        
+        setOrders(ordersData || []);
+        setWalletItems(walletData || []);
+        setWishlistItems(wishlistData || []);
+        
+        // Wishlist collections & price alerts we can keep on profile or a specific data doc
+        // Assuming we need to load them from somewhere, let's just initialize empty if missing
       } else {
         setWishlistItems([]);
         setWishlistCollections([]);
@@ -62,23 +70,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setWalletItems([]);
         setUserProfile(defaultProfile);
       }
+      setTimeout(() => { isInitialLoad.current = false; }, 1000);
     });
     return () => unsubscribe();
   }, []);
 
   // Save changes to Firestore
   useEffect(() => {
-    if (auth.currentUser) {
-      setDoc(doc(db, 'users', auth.currentUser.uid), {
-        wishlistItems,
-        wishlistCollections,
-        priceAlerts,
-        orders,
-        walletItems,
-        profile: userProfile
-      }, { merge: true });
+    if (auth.currentUser && !isInitialLoad.current) {
+      firestoreService.saveUserWishlist(auth.currentUser.uid, wishlistItems);
     }
-  }, [wishlistItems, wishlistCollections, priceAlerts, orders, walletItems, userProfile]);
+  }, [wishlistItems]);
+
+  useEffect(() => {
+    if (auth.currentUser && !isInitialLoad.current) {
+      firestoreService.updateUserProfile(auth.currentUser.uid, userProfile);
+    }
+  }, [userProfile]);
 
   return (
     <UserContext.Provider value={{

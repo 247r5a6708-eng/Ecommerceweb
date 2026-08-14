@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import React, { useState, useRef } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { Product, Review } from '../types';
@@ -24,6 +25,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ cartItems = [], product, onAddToCart, isWishlisted, onToggleWishlist, reviews = [], onOpenReviews, isCompared = false, onToggleCompare, onProductClick, onNotifyMe }: ProductCardProps) {
   const { formatPrice } = useCurrency();
+  const navigate = useNavigate();
 
   const [showChart, setShowChart] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
@@ -131,7 +133,8 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
         />
 
         <div 
-          className="aspect-[4/5] bg-gray-200 dark:bg-black overflow-hidden rounded-t-[calc(1.5rem-1px)] relative cursor-crosshair"
+          className="aspect-[4/5] bg-[#F5F5F3] dark:bg-[#0A0A0A] overflow-hidden rounded-t-[calc(0.75rem-1px)] relative cursor-pointer"
+          onClick={() => { if (onProductClick) onProductClick(product); navigate(`/product/${product.id}`); }}
           style={{ transform: "translateZ(30px)" }}
         >
           {product.image ? (
@@ -259,20 +262,21 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
         <div className="flex flex-1 flex-col p-6 z-10" style={{ transform: "translateZ(20px)" }}>
           <div className="flex justify-between items-start mb-3">
             <div>
-              <p className="text-[10px] font-bold text-blue-400 dark:text-blue-400 uppercase tracking-[0.2em] mb-1.5">
+              <p className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest mb-2">
                 {product.brand} • {product.category}{product.seller && ` • ${product.seller}`}
               </p>
-              <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-1 leading-snug tracking-tight">
+              <h3 className="text-base font-medium text-gray-900 dark:text-white line-clamp-1 leading-snug tracking-tight">
                 <a href="#" onClick={(e) => {
                   e.preventDefault();
                   if (onProductClick) onProductClick(product);
+                  navigate(`/product/${product.id}`);
                 }}>
                   <span aria-hidden="true" className="absolute inset-0 z-0" />
                   {product.name}
                 </a>
               </h3>
             </div>
-            <p className="text-lg font-extrabold text-gray-900 dark:text-white ml-3 tracking-tighter">{formatPrice(product.price)}</p>
+            <p className="text-base font-medium text-gray-900 dark:text-white ml-3">{formatPrice(product.price)}</p>
           </div>
           
           <div className="flex items-center justify-between mt-1 mb-4 z-20 relative">

@@ -1,6 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
+import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { CatalogProvider } from './contexts/CatalogContext';
@@ -11,7 +12,7 @@ createRoot(document.getElementById('root')!).render(
     <CurrencyProvider>
       <CatalogProvider>
         <UserProvider>
-        <App />
+        <BrowserRouter><App /></BrowserRouter>
       </UserProvider>
       </CatalogProvider>
     </CurrencyProvider>

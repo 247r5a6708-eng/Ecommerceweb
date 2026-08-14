@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Minus, Plus, ShoppingBag, CheckCircle2, Loader2, CreditCard, MapPin, Truck } from 'lucide-react';
@@ -19,6 +20,7 @@ interface CartProps {
 
 export default function Cart({ isOpen, onClose, items, isLoading = false, onUpdateQuantity, onRemoveItem, onClearCart, onPlaceOrder, onAddToast }: CartProps) {
   const { formatPrice } = useCurrency();
+  const navigate = useNavigate();
 
   const [checkoutState, setCheckoutState] = useState<'idle' | 'details' | 'loading' | 'success'>('idle');
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
@@ -36,11 +38,14 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
   });
   
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
+  const [promoCode, setPromoCode] = useState("");
+  const [discount, setDiscount] = useState(0);
   const [isGiftWrapped, setIsGiftWrapped] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
   const GIFT_WRAP_FEE = 5.00;
   
-  const totalAmount = subtotal + (isGiftWrapped ? GIFT_WRAP_FEE : 0);
+  const discountAmount = subtotal * discount;
+  const totalAmount = subtotal - discountAmount + (isGiftWrapped ? GIFT_WRAP_FEE : 0);
 
   useEffect(() => {
     if (!isOpen) {
@@ -51,6 +56,16 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
     }
   }, [isOpen]);
 
+  const handleApplyPromo = () => {
+    if (promoCode.toUpperCase() === 'LUMINA20') {
+      setDiscount(0.2);
+      if (onAddToast) onAddToast({ title: 'Promo Applied', message: '20% discount applied!', type: 'success' });
+    } else {
+      setDiscount(0);
+      if (onAddToast) onAddToast({ title: 'Invalid Code', message: 'Promo code is not valid.', type: 'info' });
+    }
+  };
+  
   const handleCheckout = () => {
     setCheckoutState('loading');
     
@@ -77,7 +92,8 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
         expectedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         isGiftWrapped,
         giftMessage: isGiftWrapped ? giftMessage : undefined,
-        giftWrapFee: isGiftWrapped ? GIFT_WRAP_FEE : undefined
+        giftWrapFee: isGiftWrapped ? GIFT_WRAP_FEE : undefined,
+        discount: discountAmount > 0 ? discountAmount : undefined
       };
       
       setPlacedOrder(newOrder);
@@ -372,6 +388,17 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
                 className="text-gray-900 focus:ring-gray-900"
               />
               <span className="ml-3 text-sm text-gray-900 dark:text-white font-medium">UPI</span>
+            </label>
+            <label className="flex items-center p-3 border border-gray-200 dark:border-white/10 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <input 
+                type="radio" 
+                name="payment" 
+                value="apple-pay" 
+                checked={paymentMethod === 'apple-pay'}
+                onChange={e => setPaymentMethod(e.target.value)}
+                className="text-gray-900 focus:ring-gray-900"
+              />
+              <span className="ml-3 text-sm text-gray-900 dark:text-white font-medium">Apple Pay / Google Pay</span>
             </label>
           </div>
         </div>

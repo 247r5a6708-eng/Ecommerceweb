@@ -192,3 +192,28 @@ export const getAllReviews = async (): Promise<Record<string, Review[]>> => {
     return {};
   }
 };
+
+// RETURNS
+export const getUserReturns = async (userId: string) => {
+  try {
+    const q = query(collection(db, `users/${userId}/returns`));
+    const querySnapshot = await getDocs(q);
+    const returns: any[] = [];
+    querySnapshot.forEach((doc) => {
+      returns.push({ ...doc.data(), id: doc.id });
+    });
+    return returns;
+  } catch (error) {
+    console.error("Error fetching returns:", error);
+    return [];
+  }
+};
+
+export const createReturnRequest = async (userId: string, returnData: any) => {
+  try {
+    const docRef = doc(db, `users/${userId}/returns`, returnData.id);
+    await setDoc(docRef, returnData);
+  } catch (error) {
+    console.error("Error saving return:", error);
+  }
+};

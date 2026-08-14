@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Fragment, useState, useEffect, useMemo } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,6 +25,7 @@ interface UserProfileProps {
 
 export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, userProfile, onUpdateProfile, onLogout, walletItems = [] }: UserProfileProps) {
   const { formatPrice } = useCurrency();
+  const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<UserProfileData>(userProfile);
@@ -471,6 +473,7 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                             />
                             <div className="flex-1 min-w-0">
                               <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">{item.product.name}</h4>
+                              <p className="text-xs font-bold text-green-500 mt-1">Estimated Trade-in Value: {formatPrice(item.product.price * 0.3)}</p>
                               <div className="flex items-center space-x-2 mt-2">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${item.warrantyStatus === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
                                   <Shield className="w-3 h-3 mr-1" />

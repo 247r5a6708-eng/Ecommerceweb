@@ -6,6 +6,7 @@ import React from "react";
  */
 
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import AIChatBot from './components/AIChatBot';
 import Hero from './components/Hero';
@@ -22,6 +23,8 @@ import AuthModal from './components/AuthModal';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import PromotionalBanner from './components/PromotionalBanner';
 import CompareModal from "./components/CompareModal";
+import ProductPage from './pages/ProductPage';
+import ReturnsPage from './pages/ReturnsPage';
 import NotifyMeModal from "./components/NotifyMeModal";
 import SharedWishlistModal from './components/SharedWishlistModal';
 import RecentlyViewed from './components/RecentlyViewed';
@@ -31,6 +34,7 @@ import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { useCatalog } from './contexts/CatalogContext';
 import { useUser } from './contexts/UserContext';
+import { useCart } from './hooks/useCart';
 import { categories, productTypes } from './data';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -60,18 +64,29 @@ export default function App() {
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
 
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
+  
+  const {
+    cartItems,
+    isCartOpen,
+    setIsCartOpen,
+    isCartLoading,
+    handleAddToCart,
+    handleUpdateQuantity,
+    handleRemoveItem,
+    handleClearCart
+  } = useCart(firebaseUser);
+
+  
+  
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [alertsSent, setAlertsSent] = useState<Set<string>>(new Set());
   const [notifyProduct, setNotifyProduct] = useState<Product | null>(null);
   const [notifyEmail, setNotifyEmail] = useState("");
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartLoading, setIsCartLoading] = useState(false);
-
+    
   const [searchQuery, setSearchQuery] = useState('');
   const [aiMatchedIds, setAiMatchedIds] = useState<string[] | null>(null);
   const [isAiSearching, setIsAiSearching] = useState(false);
@@ -306,26 +321,14 @@ export default function App() {
         const fbWallet = await firestoreService.getUserWallet(user.uid);
         if (fbWallet.length > 0) setWalletItems(fbWallet);
 
-        setIsCartLoading(true);
-        try {
-          const fbCart = await firestoreService.getUserCart(user.uid);
-          if (fbCart.length > 0) setCartItems(fbCart);
-        } finally {
-          setIsCartLoading(false);
-        }
+
       } else {
-        // Clear data on logout if necessary (optional)
-        setCartItems([]);
       }
     });
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (firebaseUser && !isCartLoading) {
-      firestoreService.saveUserCart(firebaseUser.uid, cartItems);
-    }
-  }, [cartItems, firebaseUser, isCartLoading]);
+
 
 
   useEffect(() => {
@@ -400,49 +403,6 @@ export default function App() {
 
   const handleClearWishlist = () => {
     setWishlistItems([]);
-  };
-
-  const handleAddToCart = (product: Product & { selectedSize?: string }) => {
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id && item.selectedSize === product.selectedSize);
-      let newItems;
-      if (existingItem) {
-        newItems = prevItems.map(item => 
-          item.id === product.id && item.selectedSize === product.selectedSize
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        newItems = [...prevItems, { ...product, quantity: 1 }];
-      }
-      
-      const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0);
-      
-      // Delay toast slightly to allow state to settle if needed, or just call it directly
-      // Since addToast uses state, it's safe to call it here, but typically side effects 
-      // in state updaters are an anti-pattern in strict mode because they might fire twice.
-      return newItems;
-    });
-
-    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0) + 1;
-    addToast({
-      title: 'Added to Cart',
-      message: `${product.name} has been added. You now have ${totalItems} item${totalItems !== 1 ? 's' : ''} in your cart.`,
-      type: 'success'
-    });
-  };
-
-  const handleUpdateQuantity = (id: string, newQuantity: number, selectedSize?: string) => {
-    if (newQuantity < 1) return;
-    setCartItems(prevItems => 
-      prevItems.map(item => 
-        item.id === id && item.selectedSize === selectedSize ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const handleRemoveItem = (id: string, selectedSize?: string) => {
-    setCartItems(prevItems => prevItems.filter(item => !(item.id === id && item.selectedSize === selectedSize)));
   };
 
   const handlePlaceOrder = (order: Order) => {
@@ -589,6 +549,80 @@ export default function App() {
       
       
       
+      
+      
+      <Routes>
+        <Route path="/" element={
+          <>
+            <Hero onSearch={setSearchQuery} />
+            <div className="relative z-20 bg-[#FAFAFA] dark:bg-[#0A0A0A]">
+            <CategoryFilter 
+              activeType={activeType}
+              availableTypes={productTypes} 
+              onTypeChange={(type) => {
+                if (type === 'All') setActiveCategory('All');
+                setActiveType(type);
+                setSearchQuery('');
+                setAiMatchedIds(null);
+              }} 
+              sortOption={sortOption}
+              onSortChange={setSortOption}
+            />
+            
+            <ProductGrid cartItems={cartItems} 
+              aiMatchedIds={aiMatchedIds}
+              isAiSearching={isAiSearching}
+              onAddToCart={handleAddToCart} 
+              searchQuery={searchQuery} 
+              activeCategory={activeCategory}
+              activeType={activeType} 
+              sortOption={sortOption}
+              wishlistItems={wishlistItems}
+              onToggleWishlist={handleToggleWishlist}
+              isLoading={isLoading}
+              reviews={reviews}
+              onOpenReviews={setReviewModalProduct}
+              compareProducts={compareProducts}
+              onToggleCompare={handleToggleCompare}
+              onProductClick={handleProductClick}
+              onNotifyMe={setNotifyProduct}
+              onClearSearch={() => {
+                setSearchQuery('');
+                setAiMatchedIds(null);
+              }}
+            />
+            </div>
+          </>
+        } />
+        <Route path="/returns" element={<ReturnsPage />} />
+        <Route path="/product/:productId" element={<ProductPage cartItems={cartItems} onAddToCart={handleAddToCart} reviews={reviews} onNotifyMe={setNotifyProduct} />} />
+      </Routes>
+
+
+      <PromotionalBanner />
+      <Navbar 
+        cartItemCount={cartItemCount} 
+        onOpenCart={() => setIsCartOpen(true)} 
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        wishlistItemCount={wishlistItems.length}
+        hasWishlistAlerts={hasWishlistAlerts}
+        onOpenProfile={() => firebaseUser ? setIsProfileOpen(true) : setIsAuthOpen(true)}
+        onOpenWishlist={() => setIsWishlistOpen(true)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
+        activeCategory={activeCategory}
+        onCategoryChange={(cat) => {
+          setActiveCategory(cat);
+          setActiveType('All');
+          setSearchQuery('');
+          setAiMatchedIds(null);
+        }}
+        onAddToast={addToast}
+      />
+      
+      
+      
       <Hero onSearch={setSearchQuery} />
       
       <div className="relative z-20 bg-[#FAFAFA] dark:bg-[#0A0A0A]">
@@ -638,7 +672,7 @@ export default function App() {
         isLoading={isCartLoading}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
-        onClearCart={() => setCartItems([])}
+        onClearCart={handleClearCart}
         onPlaceOrder={handlePlaceOrder}
         onAddToast={addToast}
       />

@@ -49,7 +49,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
     <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 pb-4 relative z-20">
       <div className="flex flex-col gap-6">
         <div>
-          <h2 className="text-4xl font-display font-medium tracking-tight text-gray-900 dark:text-white">Curated Collection</h2>
+          <h2 className="text-5xl md:text-6xl font-display tracking-tight text-neutral-900 dark:text-white">Curated Collection</h2>
           <p className="mt-4 max-w-xl text-sm text-gray-500 dark:text-gray-400">Thoughtfully designed pieces for your everyday life.</p>
         </div>
         
@@ -61,9 +61,9 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
                 <button
                   key={type}
                   onClick={() => onTypeChange(type)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                     activeType === type
-                      ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
+                      ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-sm'
                       : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                   }`}
                 >
