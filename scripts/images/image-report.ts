@@ -1,4 +1,4 @@
-import { getProducts } from '../src/services/catalogService';
+import { getProducts } from '../../src/services/catalogService';
 
 async function generateReport() {
   console.log("Product | Model | Variant | Image | Status");

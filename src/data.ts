@@ -763,27 +763,7 @@ export const products: Product[] = ([
   fitDetails: 'Snug, stretchy fit that adapts to your shape.',
   sizeGuide: 'Band Size (inches): XS: 30, S: 32, M: 34, L: 36, XL: 38. Fits cup sizes A-C best.'
  },
- {
-  id: '42',
-  name: 'Performance Boxer Briefs',
-  brand: 'ActiveFit',
-  model: 'Pro-Cool',
-  variant: 'Black/Grey 2-Pack',
-  description: 'Moisture-wicking, anti-odor boxer briefs designed for active lifestyles. Features a supportive pouch and a waistband that won\'t roll down.',
-  price: 38.00,
-  category: 'Clothing',
-  type: 'Innerwear',
-  image: 'https://images.unsplash.com/photo-1505022610485-0249ba5b3675?auto=format&fit=crop&w=800&q=80',
-  rating: 4.9,
-  trustScore: 99,
-  repairabilityScore: 2,
-  sustainabilityGrade: 'C',
-  warrantyInfo: '30-Day Returns',
-  aiSummary: 'Excellent for workouts. The synthetic blend wicks sweat efficiently and prevents chafing.',
-  sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-  fitDetails: 'Athletic fit with a 6-inch inseam. Fits close to the body.',
-  sizeGuide: 'Waist (inches): S: 28-30, M: 32-34, L: 36-38, XL: 40-42, XXL: 44-46'
- },
+ 
  {
   id: '43',
   name: 'Lace Trim Bikini Panties',

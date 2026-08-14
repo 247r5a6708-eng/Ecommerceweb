@@ -36,6 +36,7 @@ import { useCatalog } from './contexts/CatalogContext';
 import { useUser } from './contexts/UserContext';
 import { useCart } from './hooks/useCart';
 import { useSearch } from './hooks/useSearch';
+import { useRecentlyViewed } from './hooks/useRecentlyViewed';
 import { categories, productTypes } from './data';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -118,21 +119,13 @@ export default function App() {
   const [compareProducts, setCompareProducts] = useState<Product[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
 
-  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('recentlyViewed');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { recentlyViewed, addRecentlyViewed, clearRecentlyViewed } = useRecentlyViewed();
 
   const handleProductClick = (product: Product) => {
-    setRecentlyViewed(prev => {
-      const filtered = prev.filter(p => p.id !== product.id);
-      return [product, ...filtered].slice(0, 5);
-    });
+    addRecentlyViewed(product);
   };
 
-  useEffect(() => {
-    localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
-  }, [recentlyViewed]);
+  
 
   const handleToggleCompare = (product: Product) => {
     const isAlreadyCompared = compareProducts.some(p => p.id === product.id);
@@ -714,8 +707,7 @@ export default function App() {
       <RecentlyViewed
         products={recentlyViewed}
         onClear={() => {
-          setRecentlyViewed([]);
-          localStorage.removeItem('recentlyViewed');
+          clearRecentlyViewed();
         }}
         onAddToCart={handleAddToCart}
         wishlistItems={wishlistItems}

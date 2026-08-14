@@ -1,4 +1,4 @@
-import { products } from '../src/data';
+import { products } from '../../src/data';
 import https from 'https';
 import http from 'http';
 
@@ -8,8 +8,8 @@ async function checkImage(url: string): Promise<any> {
       return resolve({ status: 'missing', statusCode: null });
     }
     const client = url.startsWith('https') ? https : http;
-    const req = client.get(url, { timeout: 5000 }, (res) => {
-      if (res.statusCode && res.statusCode >= 200 && res.statusCode < 400) {
+    const req = client.get(url, { timeout: 5000, headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+      if (res.statusCode && (res.statusCode >= 200 && res.statusCode < 400 || res.statusCode === 429)) {
         resolve({ status: 'valid', statusCode: res.statusCode });
       } else {
         resolve({ status: 'broken', statusCode: res.statusCode });

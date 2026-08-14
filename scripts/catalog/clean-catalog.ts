@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import http from 'http';
-import { products } from '../src/data';
+import { products } from '../../src/data';
 
 async function checkImage(url: string): Promise<boolean> {
   return new Promise((resolve) => {

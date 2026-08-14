@@ -1,4 +1,4 @@
-import { seedCatalog } from '../src/services/catalogService';
+import { seedCatalog } from '../../src/services/catalogService';
 
 async function run() {
   await seedCatalog();

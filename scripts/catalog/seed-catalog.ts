@@ -1,6 +1,6 @@
 import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
-import { db } from '../src/lib/firebase';
-import { products } from '../src/data';
+import { db } from '../../src/lib/firebase';
+import { products } from '../../src/data';
 
 async function seed() {
   console.log('Seeding catalog...');
