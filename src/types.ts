@@ -115,6 +115,9 @@ export interface CartItem extends Product {
 export interface Review {
   id: string;
   userId?: string;
+  isGiftWrapped?: boolean;
+  giftMessage?: string;
+  giftWrapFee?: number;
   author: string;
   rating: number;
   text: string;
@@ -125,12 +128,20 @@ export interface Review {
 
 export interface Address {
   fullName: string;
+  email?: string;
+  phone?: string;
   addressLine1: string;
   addressLine2?: string;
   city: string;
   state: string;
   zipCode: string;
   country: string;
+}
+
+export interface WishlistCollection {
+  id: string;
+  name: string;
+  productIds: string[];
 }
 
 export interface UserProfileData {
@@ -166,6 +177,9 @@ export interface Order {
   tax?: number;
   subtotal?: number;
   userId?: string;
+  isGiftWrapped?: boolean;
+  giftMessage?: string;
+  giftWrapFee?: number;
 }
 
 // Phase 21 - Returns

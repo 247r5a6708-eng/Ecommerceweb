@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Search } from 'lucide-react';
 import Fuse from 'fuse.js';
 import ProductCard from './ProductCard';
 import ProductCardSkeleton from './ProductCardSkeleton';
@@ -24,9 +25,10 @@ interface ProductGridProps {
   onToggleCompare?: (product: Product) => void;
   onProductClick?: (product: Product) => void;
   onNotifyMe?: (product: Product) => void;
+  onClearSearch?: () => void;
 }
 
-export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading: propIsLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick, onNotifyMe, aiMatchedIds, isAiSearching }: ProductGridProps) {
+export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading: propIsLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick, onNotifyMe, aiMatchedIds, isAiSearching, onClearSearch }: ProductGridProps) {
   const { products, isLoading: contextIsLoading } = useCatalog();
   const isLoading = propIsLoading || contextIsLoading || isAiSearching;
   const [fuzzySearchTerm, setFuzzySearchTerm] = useState('');
@@ -153,9 +155,22 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
              ))}
            </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">No products found</h3>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">We couldn't find an exact match or fuzzy match. Try adjusting your search, check for typos, or use a broader category.</p>
+          <div className="text-center py-16 px-4">
+            <div className="bg-gray-100 dark:bg-white/5 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No products found</h3>
+            <p className="max-w-md mx-auto text-sm text-gray-500 dark:text-gray-400 mb-6">
+              We couldn't find an exact match for "{searchQuery}". Try adjusting your search, check for typos, or explore our collections.
+            </p>
+            {onClearSearch && searchQuery && (
+              <button
+                onClick={onClearSearch}
+                className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-sm font-medium rounded-full text-white bg-black hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 transition-colors shadow-sm"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <motion.div 

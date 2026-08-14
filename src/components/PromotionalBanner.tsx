@@ -12,7 +12,7 @@ export default function PromotionalBanner() {
   ];
 
   return (
-    <div className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 py-2 overflow-hidden border-b border-gray-900 dark:border-white">
+    <div className="bg-black dark:bg-white text-white dark:text-black py-2.5 overflow-hidden border-b border-black dark:border-white">
       <div className="relative flex max-w-full overflow-hidden">
         <motion.div
           className="whitespace-nowrap flex"
@@ -25,7 +25,7 @@ export default function PromotionalBanner() {
         >
           {/* Duplicate promotions to create a seamless loop */}
           {[...promotions, ...promotions].map((promo, index) => (
-            <span key={index} className="mx-8 text-sm font-medium tracking-wide">
+            <span key={index} className="mx-8 text-[11px] font-bold tracking-widest uppercase">
               {promo}
             </span>
           ))}

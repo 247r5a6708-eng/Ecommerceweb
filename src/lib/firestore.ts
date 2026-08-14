@@ -146,3 +146,49 @@ export const saveReview = async (productId: string, review: Review & { userId: s
     console.error("Error saving review:", error);
   }
 };
+
+
+// CART
+export const getUserCart = async (userId: string) => {
+  try {
+    const docRef = doc(db, `users/${userId}/data`, 'cart');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data().items || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching cart:", error);
+    return [];
+  }
+};
+
+export const saveUserCart = async (userId: string, items: any[]) => {
+  try {
+    const docRef = doc(db, `users/${userId}/data`, 'cart');
+    await setDoc(docRef, { items });
+  } catch (error) {
+    console.error("Error saving cart:", error);
+  }
+};
+
+
+export const getAllReviews = async (): Promise<Record<string, Review[]>> => {
+  try {
+    const q = query(collection(db, 'reviews'));
+    const querySnapshot = await getDocs(q);
+    const reviews: Record<string, Review[]> = {};
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const productId = data.productId;
+      if (productId) {
+        if (!reviews[productId]) reviews[productId] = [];
+        reviews[productId].push({ ...data, id: doc.id } as Review);
+      }
+    });
+    return reviews;
+  } catch (error) {
+    console.error("Error fetching all reviews:", error);
+    return {};
+  }
+};

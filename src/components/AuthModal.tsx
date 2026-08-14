@@ -36,8 +36,17 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
         await updateProfile(userCredential.user, { displayName: name });
         onLoginSuccess(userCredential.user);
         onClose();
-      } else if (mode === 'forgot_password') {
+            } else if (mode === 'forgot_password') {
+        // Send professional email via our backend
+        fetch('/api/send-forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        }).catch(err => console.error("Forgot pwd email err:", err));
+        
+        // Call Firebase auth to send the actual functional link
         await sendPasswordResetEmail(auth, email);
+        
         setMessage('Password reset email sent! Check your inbox.');
       }
     } catch (err: any) {

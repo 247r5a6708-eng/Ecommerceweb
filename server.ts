@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
@@ -27,9 +28,211 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
 
-  // API route for AI Search
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER || 'sontrachithkumar@gmail.com',
+      pass: process.env.EMAIL_PASS || 'dcpw xxcz ehuy kugf',
+    },
+  });
+
+  const getEmailTemplate = (title, contentHTML) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${title}</title>
+    </head>
+    <body style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f5; margin: 0; padding: 40px 0; color: #333;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <tr>
+          <td style="background-color: #3b82f6; padding: 40px 0; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 32px; letter-spacing: 2px;">LUMINA</h1>
+            <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 14px;">Next-Generation Technology</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 40px;">
+            ${contentHTML}
+          </td>
+        </tr>
+        <tr>
+          <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 30px; text-align: center;">
+            <p style="margin: 0; color: #64748b; font-size: 13px;">Lumina Technologies Inc.</p>
+            <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 12px;">123 Tech Avenue, Silicon Valley, CA 94025</p>
+            <p style="margin: 15px 0 0 0; color: #94a3b8; font-size: 12px;">&copy; ${new Date().getFullYear()} Lumina. All rights reserved.</p>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  app.post("/api/send-order-email", async (req, res) => {
+    try {
+      const { email, name, order, pdfBase64 } = req.body;
+      
+      const expectedDel = order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString() : new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString();
+      const customerName = name || order.address?.fullName || 'Valued Customer';
+      const orderDate = new Date(order.date).toLocaleDateString();
+      const deliveryAddress = order.address 
+        ? `${order.address.addressLine1}${order.address.addressLine2 ? ', ' + order.address.addressLine2 : ''}, ${order.address.city}, ${order.address.state} ${order.address.zipCode}, ${order.address.country}`
+        : 'Address not provided';
+        
+      const orderItemsHtml = order.items.map(item => `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.name}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.warrantyInfo || '12 Months'}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
+        </tr>
+      `).join('');
+
+      const contentHTML = `
+        <h2 style="color: #1e293b; margin-top: 0; font-size: 24px;">Order Confirmation</h2>
+        <p style="font-size: 16px; line-height: 1.6;">Dear <strong>${customerName}</strong>,</p>
+        <p style="font-size: 16px; line-height: 1.6;">Thank you for shopping with LUMINA. We are thrilled to confirm that your order <strong>#${order.id}</strong> has been successfully placed on ${orderDate}.</p>
+        
+        <div style="margin: 30px 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="margin: 0; color: #3b82f6; font-size: 16px;">Delivery Details</h3>
+          </div>
+          <div style="padding: 20px;">
+            <p style="margin: 0 0 10px 0; font-size: 15px;"><strong>Expected Delivery:</strong> ${expectedDel}</p>
+            <p style="margin: 0; font-size: 15px;"><strong>Shipping Address:</strong><br>${deliveryAddress}</p>
+          </div>
+        </div>
+
+        <div style="margin: 30px 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #f8fafc; padding: 15px 20px; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="margin: 0; color: #3b82f6; font-size: 16px;">Order Summary</h3>
+          </div>
+          <table width="100%" style="border-collapse: collapse;">
+            <thead>
+              <tr style="background-color: #f1f5f9;">
+                <th style="padding: 10px; text-align: left; font-size: 14px; color: #64748b;">Item</th>
+                <th style="padding: 10px; text-align: left; font-size: 14px; color: #64748b;">Warranty</th>
+                <th style="padding: 10px; text-align: center; font-size: 14px; color: #64748b;">Qty</th>
+                <th style="padding: 10px; text-align: right; font-size: 14px; color: #64748b;">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orderItemsHtml}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" style="padding: 15px 10px; text-align: right; font-weight: bold; font-size: 16px;">Total Amount:</td>
+                <td style="padding: 15px 10px; text-align: right; font-weight: bold; font-size: 16px; color: #3b82f6;">$${order.total.toFixed(2)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        
+        ${order.isGiftWrapped && order.giftMessage ? `
+        <div style="background-color: #fff8f1; border-left: 4px solid #f97316; padding: 15px; margin-bottom: 25px; border-radius: 4px;">
+          <h4 style="margin-top: 0; color: #c2410c; font-size: 16px;">Gift Message</h4>
+          <p style="margin: 0; font-size: 15px; font-style: italic; color: #9a3412;">"${order.giftMessage}"</p>
+        </div>
+        ` : ''}
+        <p style="font-size: 16px; line-height: 1.6;">We have attached a detailed PDF invoice to this email for your records, which includes all warranty information and product details.</p>
+        
+        <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">Best regards,<br><strong style="color: #3b82f6;">The LUMINA Team</strong></p>
+      `;
+
+      const mailOptions = {
+        from: '"LUMINA Store" <sontrachithkumar@gmail.com>',
+        to: email,
+        subject: `LUMINA Order Confirmation - #${order.id}`,
+        html: getEmailTemplate('Order Confirmation', contentHTML),
+        attachments: [
+          {
+            filename: `LUMINA_Invoice_${order.id}.pdf`,
+            content: pdfBase64.split("base64,")[1],
+            encoding: 'base64'
+          }
+        ]
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Email send error:', error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
+  
+  app.post("/api/send-cancel-email", async (req, res) => {
+    try {
+      const { email, name, order, reason } = req.body;
+      
+      const customerName = name || order.address?.fullName || 'Valued Customer';
+      const orderDate = new Date(order.date).toLocaleDateString();
+
+      const contentHTML = `
+        <h2 style="color: #1e293b; margin-top: 0; font-size: 24px;">Order Cancellation Confirmation</h2>
+        <p style="font-size: 16px; line-height: 1.6;">Dear <strong>${customerName}</strong>,</p>
+        <p style="font-size: 16px; line-height: 1.6;">This email is to confirm that your order <strong>#${order.id}</strong> placed on ${orderDate} has been successfully cancelled.</p>
+        
+        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.5;"><strong>Reason for Cancellation:</strong> ${reason || 'No reason provided'}</p>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.6;">If you have already been charged, a refund will be issued to your original payment method within 3-5 business days.</p>
+        
+        <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">Best regards,<br><strong style="color: #3b82f6;">The LUMINA Team</strong></p>
+      `;
+
+      const mailOptions = {
+        from: '"LUMINA Store" <sontrachithkumar@gmail.com>',
+        to: email,
+        subject: `LUMINA Order Cancelled - #${order.id}`,
+        html: getEmailTemplate('Order Cancellation', contentHTML)
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Cancel email error:', error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
+  app.post("/api/send-forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      const contentHTML = `
+        <h2 style="color: #1e293b; margin-top: 0; font-size: 24px;">Password Reset Request</h2>
+        <p style="font-size: 16px; line-height: 1.6;">Hello,</p>
+        <p style="font-size: 16px; line-height: 1.6;">We received a request to reset the password for your LUMINA account associated with <strong>${email}</strong>.</p>
+        <p style="font-size: 16px; line-height: 1.6;">Please note that you will receive a secondary email containing a secure link to complete the password reset process.</p>
+        
+        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+          <p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.5;"><strong>Security Notice:</strong> If you did not request a password reset, please ignore this email or contact support immediately. Your password will remain unchanged unless you click the official reset link.</p>
+        </div>
+        
+        <p style="font-size: 16px; line-height: 1.6; margin-top: 30px;">Best regards,<br><strong style="color: #3b82f6;">LUMINA Security</strong></p>
+      `;
+
+      const mailOptions = {
+        from: '"LUMINA Security" <sontrachithkumar@gmail.com>',
+        to: email,
+        subject: "LUMINA - Password Reset Request",
+        html: getEmailTemplate('Password Reset Request', contentHTML)
+      };
+
+      await transporter.sendMail(mailOptions);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Forgot password email error:', error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
   app.post("/api/ai-search", async (req, res) => {
     const startTime = Date.now();
     try {

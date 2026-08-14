@@ -8,6 +8,7 @@ export const products: Product[] = ([
   {
     id: '1',
     name: 'Sony WH-1000XM5 Wireless Headphones',
+    inventory: 3,
     brand: 'Sony',
     model: 'WH-1000XM5',
     variant: 'Midnight Blue',
@@ -26,6 +27,7 @@ export const products: Product[] = ([
   {
     id: '2',
     name: 'Keychron Q1 Pro Mechanical Keyboard',
+    inventory: 0,
     brand: 'Keychron',
     model: 'Q1 Pro',
     variant: 'Carbon Black (Brown Switches)',

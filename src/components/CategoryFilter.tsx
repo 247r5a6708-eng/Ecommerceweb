@@ -33,7 +33,6 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -47,24 +46,24 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
   const activeSortLabel = sortOptions.find(opt => opt.value === sortOption)?.label || "Sort";
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4 relative z-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 pt-8 pb-4 relative z-20">
+      <div className="flex flex-col gap-6">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">Curated Collection</h2>
+          <h2 className="text-4xl font-display font-medium tracking-tight text-gray-900 dark:text-white">Curated Collection</h2>
           <p className="mt-4 max-w-xl text-sm text-gray-500 dark:text-gray-400">Thoughtfully designed pieces for your everyday life.</p>
         </div>
         
-        <div className="mt-6 md:mt-0 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Type Filter */}
-          <div className="w-[100vw] -ml-4 pl-4 pr-4 sm:w-auto sm:-ml-0 sm:pl-0 sm:pr-0 overflow-x-auto pb-2 hide-scrollbar">
+          <div className="w-full md:flex-1 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
             <div className="flex space-x-2 md:space-x-4 min-w-max">
               {availableTypes.map((type) => (
                 <button
                   key={type}
                   onClick={() => onTypeChange(type)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-md ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                     activeType === type
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-black shadow-md'
+                      ? 'bg-black dark:bg-white text-white dark:text-black shadow-sm'
                       : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
                   }`}
                 >
@@ -73,9 +72,9 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
               ))}
             </div>
           </div>
-
+          
           {/* Sort Dropdown */}
-          <div className="relative z-50 w-full sm:w-auto" ref={dropdownRef}>
+          <div className="relative z-50 w-full sm:w-auto flex-shrink-0" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="w-full sm:w-auto flex items-center justify-between bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -83,6 +82,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
               <span>{activeSortLabel}</span>
               <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
+            
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-full sm:w-48 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg py-1">
                 {sortOptions.map((option) => (

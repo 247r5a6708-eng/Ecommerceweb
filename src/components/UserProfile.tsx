@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { X, Clock, Package, CheckCircle2, User, Mail, MapPin, Edit2, LogOut, XCircle, Phone, Image as ImageIcon, Wallet, Shield, FileText, Wrench } from 'lucide-react';
 import { Order, UserProfileData, WalletProduct } from '../types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Download } from 'lucide-react';
 import SafeProductImage from './SafeProductImage';
 import OrderTrackingMap from './OrderTrackingMap';
 import OrderStatusStepper from './OrderStatusStepper';
@@ -12,7 +15,7 @@ interface UserProfileProps {
   isOpen: boolean;
   onClose: () => void;
   orders: Order[];
-  onCancelOrder: (orderId: string) => void;
+  onCancelOrder: (orderId: string, reason?: string) => void;
   userProfile: UserProfileData;
   onUpdateProfile: (profile: UserProfileData) => void;
   onLogout: () => void;
@@ -25,7 +28,27 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<UserProfileData>(userProfile);
   const [activeTab, setActiveTab] = useState<'orders' | 'wallet'>('orders');
+
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
+  const [cancelOrderData, setCancelOrderData] = useState<{ id: string, reason: string } | null>(null);
+  const [previewPdfData, setPreviewPdfData] = useState<{ url: string, name: string } | null>(null);
+
+
+  const previewInvoice = (order: Order) => {
+    import('../utils/pdfGenerator').then(({ generateInvoicePDF }) => {
+      const doc = generateInvoicePDF(order, user);
+      const url = doc.output('bloburl');
+      setPreviewPdfData({ url: url.toString(), name: `invoice_${order.id}.pdf` });
+    });
+  };
+
+  const downloadInvoiceDirect = (order: Order) => {
+    import('../utils/pdfGenerator').then(({ generateInvoicePDF }) => {
+      const doc = generateInvoicePDF(order, user);
+      doc.save(`invoice_${order.id}.pdf`);
+    });
+  };
+
 
   const spendingData = useMemo(() => {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -358,6 +381,13 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                                     {trackingOrderId === order.id ? 'Hide Tracking' : 'Track Order'}
                                   </button>
                                 )}
+                                <button
+                                  onClick={() => previewInvoice(order)}
+                                  className="px-3 py-1.5 flex items-center bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                                >
+                                  <FileText className="w-3.5 h-3.5 mr-1" />
+                                  Invoice
+                                </button>
                               </div>
                               <div className="text-right">
                                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
@@ -397,7 +427,7 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                               {order.status === 'processing' && (
                                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
                                   <button
-                                    onClick={() => onCancelOrder(order.id)}
+                                    onClick={() => setCancelOrderData({ id: order.id, reason: '' })}
                                     className="flex items-center justify-center w-full space-x-2 py-2 px-4 rounded-md border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-sm font-medium"
                                   >
                                     <XCircle className="w-4 h-4" />
@@ -471,6 +501,99 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
               </div>
             </div>
           </motion.div>
+        
+          {/* Cancel Order Modal */}
+          {cancelOrderData && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white dark:bg-[#121216] rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden"
+              >
+                <div className="p-6">
+                  <div className="flex items-center space-x-3 text-red-600 dark:text-red-400 mb-4">
+                    <XCircle className="w-6 h-6" />
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Cancel Order</h3>
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    Are you sure you want to cancel order #{cancelOrderData.id}? Please provide a reason for cancellation.
+                  </p>
+                  <textarea
+                    value={cancelOrderData.reason}
+                    onChange={(e) => setCancelOrderData({ ...cancelOrderData, reason: e.target.value })}
+                    placeholder="Reason for cancellation (optional)"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500/50 outline-none resize-none mb-6"
+                    rows={3}
+                  />
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setCancelOrderData(null)}
+                      className="flex-1 px-4 py-2 rounded-xl border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      Keep Order
+                    </button>
+                    <button
+                      onClick={() => {
+                        onCancelOrder(cancelOrderData.id, cancelOrderData.reason);
+                        setCancelOrderData(null);
+                      }}
+                      className="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
+                    >
+                      Confirm Cancel
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* PDF Preview Modal */}
+          {previewPdfData && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white dark:bg-[#1a1a24] rounded-2xl w-full max-w-4xl h-[85vh] shadow-2xl border border-gray-100 dark:border-white/10 flex flex-col overflow-hidden"
+              >
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-white/10 flex justify-between items-center bg-gray-50 dark:bg-white/5">
+                  <div className="flex items-center space-x-3 text-blue-600 dark:text-blue-400">
+                    <FileText className="w-5 h-5" />
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">Invoice Preview</h3>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = previewPdfData.url;
+                        link.download = previewPdfData.name;
+                        link.click();
+                      }}
+                      className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download PDF
+                    </button>
+                    <button
+                      onClick={() => setPreviewPdfData(null)}
+                      className="p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex-1 bg-gray-200 dark:bg-[#0a0a0f] p-2 sm:p-4 overflow-hidden relative">
+                  <iframe 
+                    src={previewPdfData.url + "#toolbar=0"} 
+                    className="w-full h-full rounded-lg shadow-inner bg-white"
+                    title="PDF Preview"
+                  />
+                </div>
+              </motion.div>
+            </div>
+          )}
+
         </Fragment>
       )}
     </AnimatePresence>

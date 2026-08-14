@@ -104,25 +104,11 @@ export default function Hero({ onSearch }: HeroProps) {
     >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* 3D Grid Background */}
-        <div className="absolute inset-0 bg-grid-pattern opacity-30 [transform:perspective(1000px)_rotateX(60deg)_translateY(100px)_scale(2)] origin-bottom" />
+        
         
         {/* Animated Orbs */}
-        <motion.div 
-           animate={{
-            x: mousePosition.x * -100,
-            y: mousePosition.y * -100,
-          }}
-          transition={{ type: "spring", stiffness: 50, damping: 20 }}
-          className="absolute top-[20%] left-[20%] w-96 h-96 bg-blue-600/20 rounded-full blur-[100px] pointer-events-none" 
-        />
-        <motion.div 
-           animate={{
-            x: mousePosition.x * 100,
-            y: mousePosition.y * 100,
-          }}
-          transition={{ type: "spring", stiffness: 50, damping: 20 }}
-          className="absolute bottom-[20%] right-[20%] w-96 h-96 bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" 
-        />
+        
+        
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -134,10 +120,10 @@ export default function Hero({ onSearch }: HeroProps) {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-6xl md:text-8xl font-extrabold tracking-tighter mb-8 leading-[1.05]"
+            className="text-6xl md:text-8xl font-normal tracking-tight mb-8 leading-[1.05]"
           >
             <span className="text-gray-900 dark:text-white">Shop The</span> <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 neon-text-shadow">Future</span>
+            <span className="text-gray-500 dark:text-gray-400 italic">Future</span>
           </motion.h1>
           
           <motion.form 
@@ -151,8 +137,6 @@ export default function Hero({ onSearch }: HeroProps) {
               transition: 'transform 0.1s ease-out'
             }}
           >
-            <div className={`absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-xl transition-opacity opacity-50 group-hover:opacity-100 ${showSuggestions ? 'hidden sm:block' : ''}`} />
-            
             {showSuggestions && (
               <div className="flex justify-between items-center mb-4 sm:hidden">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Search</h3>
@@ -166,10 +150,10 @@ export default function Hero({ onSearch }: HeroProps) {
               </div>
             )}
 
-            <div className={`relative rounded-3xl p-2 flex flex-col sm:flex-row sm:items-center ${showSuggestions ? 'shadow-none border-0 sm:border sm:border-gray-200 sm:dark:border-white/20 sm:shadow-lg sm:glass-panel bg-gray-50 dark:bg-white/5 sm:bg-transparent' : 'glass-panel border border-gray-200 dark:border-white/20'}`} ref={suggestionsRef}>
+            <div className={`relative rounded-full p-2 flex flex-col sm:flex-row sm:items-center bg-white dark:bg-[#111] border ${showSuggestions ? "border-gray-300 dark:border-gray-700 shadow-xl" : "border-gray-200 dark:border-gray-800 shadow-sm"}`} ref={suggestionsRef}>
               <div className="flex items-center w-full relative">
                 <div className="pl-4 sm:pl-6 pointer-events-none absolute left-0 z-10">
-                  <Search className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
+                  <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   type="text"
@@ -177,14 +161,14 @@ export default function Hero({ onSearch }: HeroProps) {
                   onChange={(e) => setIntent(e.target.value)}
                   onFocus={() => setShowSuggestions(true)}
                   className="block w-full pl-12 sm:pl-16 pr-4 py-4 sm:py-6 bg-transparent text-lg sm:text-xl placeholder-gray-500 focus:outline-none text-gray-900 dark:text-white font-medium relative z-20"
-                  placeholder="Initialize search sequence..."
+                  placeholder="Search products..."
                 />
                 <button type="button" className="p-3 sm:p-4 mr-1 sm:mr-2 text-gray-400 hover:text-blue-500 transition-colors rounded-2xl hover:bg-gray-100 dark:hover:bg-white/10 flex-shrink-0 z-20" title="Visual Search (AR)">
                   <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
                 <button
                   type="submit"
-                  className="hidden sm:inline-flex items-center justify-center px-8 py-5 border border-transparent text-lg font-bold rounded-2xl text-black bg-white hover:bg-blue-50 focus:outline-none transition-all duration-300 hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] active:scale-95 whitespace-nowrap flex-shrink-0 z-20"
+                  className="hidden sm:inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-full text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 focus:outline-none transition-all duration-300 active:scale-95 whitespace-nowrap flex-shrink-0 z-20"
                 >
                   Execute <ArrowRight className="ml-3 w-5 h-5" />
                 </button>
@@ -193,7 +177,7 @@ export default function Hero({ onSearch }: HeroProps) {
               {showSuggestions && (
                  <button
                   type="submit"
-                  className="mt-4 sm:hidden w-full inline-flex items-center justify-center px-6 py-4 border border-transparent text-lg font-bold rounded-xl text-black bg-white hover:bg-blue-50 focus:outline-none transition-all duration-300 shadow-md active:scale-95 whitespace-nowrap z-20"
+                  className="mt-4 sm:hidden w-full inline-flex items-center justify-center px-6 py-4 border border-transparent text-lg font-medium rounded-full text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 focus:outline-none transition-all duration-300 active:scale-95 whitespace-nowrap z-20"
                 >
                   Execute <ArrowRight className="ml-2 w-5 h-5" />
                 </button>
@@ -205,7 +189,7 @@ export default function Hero({ onSearch }: HeroProps) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="static sm:absolute sm:top-full sm:left-0 sm:right-0 mt-4 bg-white/95 dark:bg-[#121216]/95 backdrop-blur-xl sm:border border-gray-200 dark:border-white/10 sm:rounded-2xl sm:shadow-2xl overflow-hidden z-50 p-2 text-left"
+                    className="static sm:absolute sm:top-full sm:left-0 sm:right-0 mt-4 bg-white dark:bg-[#111] sm:border border-gray-100 dark:border-gray-800 sm:rounded-3xl sm:shadow-2xl overflow-hidden z-50 p-2 text-left"
                   >
                     {recentSearches.length > 0 && (
                       <div className="mb-2">

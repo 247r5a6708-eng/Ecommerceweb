@@ -51,8 +51,14 @@ export default function SafeProductImage({ src, alt, className, imageClassName, 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse"
-          />
+            className="absolute inset-0 bg-gray-200 dark:bg-gray-800 overflow-hidden"
+          >
+            <motion.div
+              animate={{ x: ["-100%", "200%"] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md"
+            />
+          </motion.div>
         )}
         
         {status === 'loaded' && imageUrl && (

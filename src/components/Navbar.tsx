@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { categories } from '../data';
 import { useCurrency, Currency } from '../contexts/CurrencyContext';
+import { useCatalog } from '../contexts/CatalogContext';
+import SafeProductImage from './SafeProductImage';
 
 interface NavbarProps {
   cartItemCount: number;
@@ -12,6 +14,7 @@ interface NavbarProps {
   onOpenProfile: () => void;
   onOpenWishlist: () => void;
   wishlistItemCount?: number;
+  hasWishlistAlerts?: boolean;
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
   activeCategory: string;
@@ -29,6 +32,7 @@ export default function Navbar({
   onOpenProfile, 
   onOpenWishlist,
   wishlistItemCount = 0,
+  hasWishlistAlerts = false,
   isDarkMode,
   onToggleDarkMode,
   activeCategory,
@@ -102,6 +106,15 @@ export default function Navbar({
 
   const recognitionRef = useRef<any>(null);
   const { currency, setCurrency } = useCurrency();
+  const { products } = useCatalog();
+  const recommendedProducts = React.useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return products
+      .filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query))
+      .slice(0, 5);
+  }, [searchQuery, products]);
+
 
   useEffect(() => {
     // Initialize speech recognition if supported
@@ -165,7 +178,7 @@ export default function Navbar({
         ? 'bg-white/70 dark:bg-[#030305]/70 backdrop-blur-xl border-b border-gray-200 dark:border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]' 
         : 'bg-transparent border-b border-transparent dark:border-transparent'
     }`}>
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-transparent pointer-events-none opacity-50" />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -211,7 +224,7 @@ export default function Navbar({
               <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full pointer-events-none group-hover:bg-purple-500/30 transition-colors duration-500" />
             </div>
             <span className="text-3xl font-extrabold tracking-tighter text-gray-900 dark:text-white flex items-center">
-              LUM<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">IN</span>A
+              LUMINA
             </span>
           </div>
 
@@ -223,7 +236,7 @@ export default function Navbar({
                 onClick={() => onCategoryChange(category)}
                 className={`font-bold px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md text-sm tracking-wide ${
                   activeCategory === category 
-                    ? 'text-white bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 dark:text-black shadow-md' 
+                    ? 'text-white bg-black dark:bg-white dark:text-black shadow-sm' 
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10'
                 }`}
               >
@@ -239,9 +252,10 @@ export default function Navbar({
                 <Search className="h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
               </div>
               <input
+                id="desktop-search-input"
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search matrix..."
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 onFocus={() => setShowDesktopSuggestions(true)}
@@ -261,28 +275,63 @@ export default function Navbar({
               </button>
               
               <AnimatePresence>
-                {showDesktopSuggestions && recentSearches.length > 0 && (
+                {showDesktopSuggestions && (recentSearches.length > 0 || searchQuery.trim() !== '') && (
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 py-2"
+                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 py-2 min-w-[300px]"
                   >
-                    <div className="flex items-center justify-between px-4 py-2">
-                      <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</h4>
-                      <button onClick={clearRecentSearches} className="text-xs text-gray-400 hover:text-red-500 transition-colors">Clear</button>
-                    </div>
-                    {recentSearches.map((search, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSuggestionClick(search)}
-                        className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
-                      >
-                        <Clock className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                        <span className="flex-1 text-left">{search}</span>
-                      </button>
-                    ))}
+                    {searchQuery.trim() === '' && recentSearches.length > 0 && (
+                      <>
+                        <div className="flex items-center justify-between px-4 py-2">
+                          <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</h4>
+                          <button onClick={clearRecentSearches} className="text-xs text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                        </div>
+                        {recentSearches.map((search, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSuggestionClick(search)}
+                            className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
+                          >
+                            <Clock className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                            <span className="flex-1 text-left">{search}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {searchQuery.trim() !== '' && recommendedProducts.length > 0 && (
+                      <>
+                        <div className="px-4 py-2">
+                          <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Products</h4>
+                        </div>
+                        {recommendedProducts.map((product) => (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => handleSuggestionClick(product.name)}
+                            className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
+                          >
+                            <SafeProductImage
+                              src={product.image}
+                              alt={product.name}
+                              className="w-8 h-8 mr-3 rounded bg-gray-100 flex-shrink-0"
+                              imageClassName="w-8 h-8 rounded object-cover"
+                            />
+                            <div className="flex-1 text-left flex flex-col min-w-0">
+                              <span className="truncate font-medium">{product.name}</span>
+                              <span className="text-[10px] text-gray-500 truncate">{product.category}</span>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {searchQuery.trim() !== '' && recommendedProducts.length === 0 && (
+                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                        No products found
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -295,7 +344,7 @@ export default function Navbar({
                 aria-label="Compare"
               >
                 <Scale className="w-5 h-5" />
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full shadow-sm">
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-black dark:bg-white rounded-full shadow-sm">
                   {compareCount}
                 </span>
               </button>
@@ -328,8 +377,14 @@ export default function Navbar({
               aria-label="Wishlist"
             >
               <Heart className="w-5 h-5" />
+              {hasWishlistAlerts && (
+                <span className="absolute top-1 right-1 flex h-2.5 w-2.5 transform translate-x-1/2 -translate-y-1/2 z-10">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-[#030305]"></span>
+                </span>
+              )}
               {wishlistItemCount > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full shadow-sm">
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-black dark:bg-white rounded-full shadow-sm">
                   {wishlistItemCount}
                 </span>
               )}
@@ -398,28 +453,63 @@ export default function Navbar({
                 </button>
                 
                 <AnimatePresence>
-                  {showMobileSuggestions && recentSearches.length > 0 && (
+                  {showMobileSuggestions && (recentSearches.length > 0 || searchQuery.trim() !== '') && (
                     <motion.div
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 5 }}
                       className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl overflow-hidden z-50 py-2"
                     >
-                      <div className="flex items-center justify-between px-4 py-2">
-                        <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</h4>
-                        <button onClick={clearRecentSearches} className="text-xs text-gray-400 hover:text-red-500 transition-colors">Clear</button>
-                      </div>
-                      {recentSearches.map((search, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleSuggestionClick(search)}
-                          className="w-full flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
-                        >
-                          <Clock className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                          <span className="flex-1 text-left">{search}</span>
-                        </button>
-                      ))}
+                      {searchQuery.trim() === '' && recentSearches.length > 0 && (
+                        <>
+                          <div className="flex items-center justify-between px-4 py-2">
+                            <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Recent Searches</h4>
+                            <button onClick={clearRecentSearches} className="text-xs text-gray-400 hover:text-red-500 transition-colors">Clear</button>
+                          </div>
+                          {recentSearches.map((search, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSuggestionClick(search)}
+                              className="w-full flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
+                            >
+                              <Clock className="w-4 h-4 mr-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                              <span className="flex-1 text-left">{search}</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {searchQuery.trim() !== '' && recommendedProducts.length > 0 && (
+                        <>
+                          <div className="px-4 py-2">
+                            <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Products</h4>
+                          </div>
+                          {recommendedProducts.map((product) => (
+                            <button
+                              key={product.id}
+                              type="button"
+                              onClick={() => handleSuggestionClick(product.name)}
+                              className="w-full flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
+                            >
+                              <SafeProductImage
+                                src={product.image}
+                                alt={product.name}
+                                className="w-10 h-10 mr-3 rounded-md bg-gray-100 flex-shrink-0"
+                                imageClassName="w-10 h-10 rounded-md object-cover"
+                              />
+                              <div className="flex-1 text-left flex flex-col min-w-0">
+                                <span className="truncate font-medium">{product.name}</span>
+                                <span className="text-[10px] text-gray-500 truncate">{product.category}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      {searchQuery.trim() !== '' && recommendedProducts.length === 0 && (
+                        <div className="px-4 py-4 text-sm text-gray-500 text-center">
+                          No products found
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -437,7 +527,15 @@ export default function Navbar({
                   onClick={() => { setIsMobileMenuOpen(false); onOpenWishlist(); }}
                   className="flex items-center justify-center space-x-2 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 font-medium relative"
                 >
-                  <Heart className="w-5 h-5" />
+                  <div className="relative">
+                    <Heart className="w-5 h-5" />
+                    {hasWishlistAlerts && (
+                      <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-[#121216]"></span>
+                      </span>
+                    )}
+                  </div>
                   <span>Wishlist</span>
                   {wishlistItemCount > 0 && (
                     <span className="absolute top-2 right-4 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-pink-500 rounded-full">

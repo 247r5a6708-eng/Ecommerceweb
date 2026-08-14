@@ -1,3 +1,4 @@
+import { generateInvoicePDF } from './utils/pdfGenerator';
 import React from "react";
 /**
  * @license
@@ -22,9 +23,12 @@ import PrivacyPolicyModal from './components/PrivacyPolicyModal';
 import PromotionalBanner from './components/PromotionalBanner';
 import CompareModal from "./components/CompareModal";
 import NotifyMeModal from "./components/NotifyMeModal";
+import SharedWishlistModal from './components/SharedWishlistModal';
 import RecentlyViewed from './components/RecentlyViewed';
 import { Mail, Scale, X } from 'lucide-react';
 import { Product, CartItem, Order, Review, ToastType } from './types';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 import { useCatalog } from './contexts/CatalogContext';
 import { useUser } from './contexts/UserContext';
 import { categories, productTypes } from './data';
@@ -34,22 +38,67 @@ import * as firestoreService from './lib/firestore';
 
 export default function App() {
   const { products, isLoading } = useCatalog();
-  const { wishlistItems, setWishlistItems, orders, setOrders, walletItems, setWalletItems, userProfile, setUserProfile, reviews, setReviews } = useUser();
+
+  const { wishlistItems, setWishlistItems, orders, setOrders, walletItems, setWalletItems, userProfile, setUserProfile, priceAlerts } = useUser();
+  const [reviews, setReviews] = useState<Record<string, Review[]>>({});
+
+  const hasWishlistAlerts = React.useMemo(() => {
+    return wishlistItems.some(id => {
+      const p = products.find(prod => prod.id === id);
+      if (!p) return false;
+      
+      const historyLength = p.priceHistory?.length || 0;
+      if (historyLength > 1) {
+        const latest = p.priceHistory[historyLength - 1].price;
+        const previous = p.priceHistory[historyLength - 2].price;
+        if (latest < previous) return true; // Price dropped!
+      }
+      return false;
+    });
+  }, [wishlistItems, products]);
+
+  const { width, height } = useWindowSize();
+  const [showConfetti, setShowConfetti] = useState(false);
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [alertsSent, setAlertsSent] = useState<Set<string>>(new Set());
   const [notifyProduct, setNotifyProduct] = useState<Product | null>(null);
   const [notifyEmail, setNotifyEmail] = useState("");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartLoading, setIsCartLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [aiMatchedIds, setAiMatchedIds] = useState<string[] | null>(null);
   const [isAiSearching, setIsAiSearching] = useState(false);
 
+  const [sharedWishlistUserId, setSharedWishlistUserId] = useState<string | null>(null);
+  const [sharedWishlistItems, setSharedWishlistItems] = useState<string[]>([]);
+  const [isSharedWishlistLoading, setIsSharedWishlistLoading] = useState(false);
+
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sharedUserId = params.get('sharedWishlist');
+      if (sharedUserId) {
+        setSharedWishlistUserId(sharedUserId);
+        setIsSharedWishlistLoading(true);
+        firestoreService.getUserWishlist(sharedUserId).then(items => {
+          setSharedWishlistItems(items);
+          setIsSharedWishlistLoading(false);
+        });
+      }
+    }
+  }, []);
+
+
+  useEffect(() => {
+    let isCancelled = false;
+
     if (!searchQuery) {
       setAiMatchedIds(null);
       return;
@@ -64,20 +113,29 @@ export default function App() {
           body: JSON.stringify({ query: searchQuery })
         });
         const data = await res.json();
-        setAiMatchedIds(data.matchedIds || []);
+        if (!isCancelled) {
+          setAiMatchedIds(data.matchedIds || []);
+        }
       } catch (err) {
-        console.error('AI Search failed', err);
-        setAiMatchedIds(null);
+        if (!isCancelled) {
+          console.error('AI Search failed', err);
+          setAiMatchedIds(null);
+        }
       } finally {
-        setIsAiSearching(false);
+        if (!isCancelled) {
+          setIsAiSearching(false);
+        }
       }
     };
 
     const timer = setTimeout(() => {
-      performAISearch();
+      if (!isCancelled) performAISearch();
     }, 1000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
   }, [searchQuery]);
 
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -130,6 +188,29 @@ export default function App() {
     }, 5000);
   };
   
+  useEffect(() => {
+    if (!products.length) return;
+    const newAlertsSent = new Set(alertsSent);
+    let didSend = false;
+
+    products.forEach(p => {
+      const targetPrice = priceAlerts[p.id];
+      if (targetPrice && p.price <= targetPrice && !newAlertsSent.has(p.id)) {
+        addToast({
+          title: 'Price Alert Triggered! 📧',
+          message: `Email sent to ${userProfile.email || 'you'}: ${p.name} is now below your threshold (${p.price.toFixed(2)})!`,
+          type: 'success'
+        });
+        newAlertsSent.add(p.id);
+        didSend = true;
+      }
+    });
+
+    if (didSend) {
+      setAlertsSent(newAlertsSent);
+    }
+  }, [products, priceAlerts, userProfile.email]);
+
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
@@ -148,6 +229,15 @@ export default function App() {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   
   const [reviewModalProduct, setReviewModalProduct] = useState<Product | null>(null);
+
+
+  useEffect(() => {
+    firestoreService.getAllReviews().then(data => {
+      if (data) {
+        setReviews(data);
+      }
+    });
+  }, []);
 
   const handleAddReview = (productId: string, reviewData: Omit<Review, 'id' | 'date'>) => {
     const newReview: Review = {
@@ -215,9 +305,58 @@ export default function App() {
 
         const fbWallet = await firestoreService.getUserWallet(user.uid);
         if (fbWallet.length > 0) setWalletItems(fbWallet);
+
+        setIsCartLoading(true);
+        try {
+          const fbCart = await firestoreService.getUserCart(user.uid);
+          if (fbCart.length > 0) setCartItems(fbCart);
+        } finally {
+          setIsCartLoading(false);
+        }
+      } else {
+        // Clear data on logout if necessary (optional)
+        setCartItems([]);
       }
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (firebaseUser && !isCartLoading) {
+      firestoreService.saveUserCart(firebaseUser.uid, cartItems);
+    }
+  }, [cartItems, firebaseUser, isCartLoading]);
+
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input, textarea, or contenteditable
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
+        return;
+      }
+
+      // Check shortcuts
+      if (e.key === '/') {
+        e.preventDefault();
+        const searchInput = document.getElementById('desktop-search-input');
+        if (searchInput) {
+          searchInput.focus();
+        }
+      } else if (e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        setIsCartOpen(prev => !prev);
+      } else if (e.key.toLowerCase() === 'w') {
+        e.preventDefault();
+        setIsWishlistOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleUpdateProfile = (newProfile: typeof userProfile) => {
@@ -266,16 +405,31 @@ export default function App() {
   const handleAddToCart = (product: Product & { selectedSize?: string }) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === product.id && item.selectedSize === product.selectedSize);
+      let newItems;
       if (existingItem) {
-        return prevItems.map(item => 
+        newItems = prevItems.map(item => 
           item.id === product.id && item.selectedSize === product.selectedSize
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
+      } else {
+        newItems = [...prevItems, { ...product, quantity: 1 }];
       }
-      return [...prevItems, { ...product, quantity: 1 }];
+      
+      const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0);
+      
+      // Delay toast slightly to allow state to settle if needed, or just call it directly
+      // Since addToast uses state, it's safe to call it here, but typically side effects 
+      // in state updaters are an anti-pattern in strict mode because they might fire twice.
+      return newItems;
     });
-    setIsCartOpen(true);
+
+    const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0) + 1;
+    addToast({
+      title: 'Added to Cart',
+      message: `${product.name} has been added. You now have ${totalItems} item${totalItems !== 1 ? 's' : ''} in your cart.`,
+      type: 'success'
+    });
   };
 
   const handleUpdateQuantity = (id: string, newQuantity: number, selectedSize?: string) => {
@@ -293,11 +447,40 @@ export default function App() {
 
   const handlePlaceOrder = (order: Order) => {
     setOrders(prev => [order, ...prev]);
+    
+    // Trigger confetti
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 7000);
+
     if (firebaseUser) {
        firestoreService.saveOrder(firebaseUser.uid, order);
     }
     
     // Add to digital wallet
+    
+    // Send email with PDF attachment
+    const customerEmail = order.address?.email || userProfile?.email;
+    if (customerEmail) {
+      try {
+        const tempProfile = userProfile || { name: order.address?.fullName || 'Customer', email: customerEmail, phone: order.address?.phone || '', address: '', avatar: '' };
+        const doc = generateInvoicePDF(order, tempProfile);
+        const pdfBase64 = doc.output('datauristring');
+        
+        fetch('/api/send-order-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: customerEmail,
+            name: order.address?.fullName || userProfile?.name || 'Customer',
+            order: order,
+            pdfBase64: pdfBase64
+          })
+        }).catch(err => console.error("Email send err:", err));
+      } catch (err) {
+        console.error("PDF generation err:", err);
+      }
+    }
+
     const newWalletItems = order.items.map(item => {
       const d = new Date();
       d.setFullYear(d.getFullYear() + (item.warrantyInfo?.includes('2 Years') ? 2 : 1));
@@ -318,7 +501,8 @@ export default function App() {
     }
   };
 
-  const handleCancelOrder = (orderId: string) => {
+  const handleCancelOrder = (orderId: string, reason?: string) => {
+    const orderToCancel = orders.find(o => o.id === orderId);
     setOrders(prev => prev.map(order => 
       order.id === orderId 
         ? { ...order, status: 'cancelled' }
@@ -332,6 +516,22 @@ export default function App() {
       message: `Order #${orderId} has been successfully cancelled.`,
       type: 'info'
     });
+
+    if (orderToCancel) {
+      const customerEmail = orderToCancel.address?.email || userProfile?.email;
+      if (customerEmail) {
+        fetch('/api/send-cancel-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: customerEmail,
+            name: orderToCancel.address?.fullName || userProfile?.name || 'Customer',
+            order: orderToCancel,
+            reason: reason || 'No reason provided'
+          })
+        }).catch(err => console.error("Cancel email send err:", err));
+      }
+    }
   };
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
@@ -351,9 +551,20 @@ export default function App() {
   const availableTypes: string[] = ['All', ...Array.from(new Set(products.filter(p => activeCategory === 'All' || p.category === activeCategory).map(p => p.type))) as string[]];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#030305] font-sans text-gray-900 dark:text-gray-100 selection:bg-blue-500/30 transition-colors duration-500 relative">
-      <div className="fixed inset-0 bg-noise pointer-events-none z-50" />
-      <div className="fixed top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent z-50 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0A0A0A] font-sans text-[#111] dark:text-[#FAFAFA] selection:bg-gray-300 dark:selection:bg-white/20 transition-colors duration-500 relative">
+      
+      {showConfetti && (
+        <div className="fixed inset-0 z-[100] pointer-events-none">
+          <Confetti
+            width={width}
+            height={height}
+            recycle={false}
+            numberOfPieces={500}
+            gravity={0.15}
+          />
+        </div>
+      )}
+
       <PromotionalBanner />
       <Navbar 
         cartItemCount={cartItemCount} 
@@ -361,6 +572,7 @@ export default function App() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         wishlistItemCount={wishlistItems.length}
+        hasWishlistAlerts={hasWishlistAlerts}
         onOpenProfile={() => firebaseUser ? setIsProfileOpen(true) : setIsAuthOpen(true)}
         onOpenWishlist={() => setIsWishlistOpen(true)}
         isDarkMode={isDarkMode}
@@ -369,6 +581,8 @@ export default function App() {
         onCategoryChange={(cat) => {
           setActiveCategory(cat);
           setActiveType('All');
+          setSearchQuery('');
+          setAiMatchedIds(null);
         }}
         onAddToast={addToast}
       />
@@ -377,11 +591,18 @@ export default function App() {
       
       <Hero onSearch={setSearchQuery} />
       
-      <div className="relative z-20 bg-gray-50 dark:bg-[#030305]">
+      <div className="relative z-20 bg-[#FAFAFA] dark:bg-[#0A0A0A]">
       <CategoryFilter 
         activeType={activeType}
         availableTypes={availableTypes} 
-        onTypeChange={setActiveType} 
+        onTypeChange={(type) => {
+          if (type === 'All') {
+            setActiveCategory('All');
+          }
+          setActiveType(type);
+          setSearchQuery('');
+          setAiMatchedIds(null);
+        }} 
         sortOption={sortOption}
         onSortChange={setSortOption}
       />
@@ -403,6 +624,10 @@ export default function App() {
         onToggleCompare={handleToggleCompare}
         onProductClick={handleProductClick}
         onNotifyMe={setNotifyProduct}
+        onClearSearch={() => {
+          setSearchQuery('');
+          setAiMatchedIds(null);
+        }}
       />
       </div>
       
@@ -410,6 +635,7 @@ export default function App() {
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         items={cartItems}
+        isLoading={isCartLoading}
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onClearCart={() => setCartItems([])}
@@ -418,6 +644,23 @@ export default function App() {
       />
       
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      <SharedWishlistModal
+        isOpen={!!sharedWishlistUserId}
+        onClose={() => {
+          setSharedWishlistUserId(null);
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('sharedWishlist');
+            window.history.replaceState({}, '', url.toString());
+          }
+        }}
+        productIds={sharedWishlistItems}
+        products={products}
+        isLoading={isSharedWishlistLoading}
+        onAddToCart={handleAddToCart}
+      />
+
       
       <UserProfile 
         isOpen={isProfileOpen}
@@ -439,6 +682,7 @@ export default function App() {
       />
       
       <Wishlist
+        onAddToast={addToast}
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
         items={wishlistItems.map(id => products.find(p => p.id === id)!).filter(Boolean)}
@@ -472,6 +716,10 @@ export default function App() {
       
       <RecentlyViewed
         products={recentlyViewed}
+        onClear={() => {
+          setRecentlyViewed([]);
+          localStorage.removeItem('recentlyViewed');
+        }}
         onAddToCart={handleAddToCart}
         wishlistItems={wishlistItems}
         onToggleWishlist={handleToggleWishlist}

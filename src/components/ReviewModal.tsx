@@ -92,10 +92,10 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
 
               <div className="flex-1 overflow-y-auto p-6 space-y-8">
                 {/* Summary */}
-                <div className="flex items-center space-x-4 mb-6">
-                  <div className="text-4xl font-bold text-gray-900 dark:text-white">{averageRating.toFixed(1)}</div>
-                  <div>
-                    <div className="flex items-center">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-8 mb-8">
+                  <div className="flex flex-col items-center min-w-[120px]">
+                    <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">{averageRating.toFixed(1)}</div>
+                    <div className="flex items-center mb-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
@@ -107,9 +107,31 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
                         />
                       ))}
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
                     </p>
+                  </div>
+                  
+                  {/* Rating Distribution */}
+                  <div className="flex-1 space-y-2">
+                    {[5, 4, 3, 2, 1].map(star => {
+                      const count = reviews.filter(r => Math.round(r.rating) === star).length;
+                      const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                      return (
+                        <div key={star} className="flex items-center text-sm">
+                          <span className="w-8 font-medium text-gray-600 dark:text-gray-400 flex items-center justify-end">{star} <Star className="w-3 h-3 ml-1 fill-current" /></span>
+                          <div className="flex-1 h-2 mx-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percentage}%` }}
+                              transition={{ duration: 1, ease: "easeOut" }}
+                              className={`h-full rounded-full ${star >= 4 ? 'bg-green-500' : star === 3 ? 'bg-yellow-400' : 'bg-red-500'}`} 
+                            />
+                          </div>
+                          <span className="w-8 text-right text-gray-500 dark:text-gray-400 text-xs">{Math.round(percentage)}%</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 

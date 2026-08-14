@@ -9,6 +9,7 @@ interface CartProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
+  isLoading?: boolean;
   onUpdateQuantity: (id: string, newQuantity: number, selectedSize?: string) => void;
   onRemoveItem: (id: string, selectedSize?: string) => void;
   onClearCart: () => void;
@@ -16,7 +17,7 @@ interface CartProps {
   onAddToast?: (toast: Omit<ToastType, 'id'>) => void;
 }
 
-export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemoveItem, onClearCart, onPlaceOrder, onAddToast }: CartProps) {
+export default function Cart({ isOpen, onClose, items, isLoading = false, onUpdateQuantity, onRemoveItem, onClearCart, onPlaceOrder, onAddToast }: CartProps) {
   const { formatPrice } = useCurrency();
 
   const [checkoutState, setCheckoutState] = useState<'idle' | 'details' | 'loading' | 'success'>('idle');
@@ -25,6 +26,8 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
 
   const [address, setAddress] = useState<Address>({
     fullName: 'Jane Doe',
+    email: 'kumarrachith0@gmail.com',
+    phone: '+1 234 567 8900',
     addressLine1: '123 Tech Lane',
     city: 'San Francisco',
     state: 'CA',
@@ -33,6 +36,11 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
   });
   
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
+  const [isGiftWrapped, setIsGiftWrapped] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
+  const GIFT_WRAP_FEE = 5.00;
+  
+  const totalAmount = subtotal + (isGiftWrapped ? GIFT_WRAP_FEE : 0);
 
   useEffect(() => {
     if (!isOpen) {
@@ -62,11 +70,14 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
         id: Math.random().toString(36).substr(2, 9).toUpperCase(),
         date: new Date().toISOString(),
         items: [...items],
-        total: subtotal,
+        total: totalAmount,
         status: 'processing',
         address: { ...address },
         paymentMethod,
-        expectedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+        expectedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        isGiftWrapped,
+        giftMessage: isGiftWrapped ? giftMessage : undefined,
+        giftWrapFee: isGiftWrapped ? GIFT_WRAP_FEE : undefined
       };
       
       setPlacedOrder(newOrder);
@@ -107,7 +118,38 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
   const renderCartItems = () => (
     <Fragment>
       <div className="flex-1 overflow-y-auto p-6 sm:px-6">
-        {items.length === 0 ? (
+        {isLoading ? (
+          <ul role="list" className="-my-6 divide-y divide-gray-100 dark:divide-white/10">
+            {[1, 2, 3].map((n) => (
+              <li key={n} className="flex py-6">
+                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 dark:border-white/5 bg-gray-200 dark:bg-gray-800 relative">
+                  <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md" />
+                </div>
+                <div className="ml-4 flex flex-1 flex-col justify-center space-y-3">
+                  <div className="flex justify-between">
+                    <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded relative overflow-hidden">
+                      <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md" />
+                    </div>
+                    <div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded relative overflow-hidden">
+                      <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-800 rounded relative overflow-hidden">
+                    <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md" />
+                  </div>
+                  <div className="flex justify-between items-end mt-2">
+                    <div className="h-8 w-24 bg-gray-200 dark:bg-gray-800 rounded relative overflow-hidden">
+                      <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md" />
+                    </div>
+                    <div className="h-4 w-12 bg-gray-200 dark:bg-gray-800 rounded relative overflow-hidden">
+                      <motion.div animate={{ x: ["-100%", "200%"] }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md" />
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
             <div className="w-20 h-20 bg-gray-50 dark:bg-white/10 rounded-full flex items-center justify-center mb-2">
               <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-gray-600" />
@@ -178,9 +220,55 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
 
       {items.length > 0 && (
         <div className="border-t border-gray-100 dark:border-white/5 px-6 py-6 sm:px-6">
-          <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white mb-4">
+          <div className="mb-6 bg-gray-50 dark:bg-white/5 p-4 rounded-lg border border-gray-100 dark:border-white/10">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isGiftWrapped}
+                onChange={(e) => setIsGiftWrapped(e.target.checked)}
+                className="w-4 h-4 text-gray-900 bg-white border-gray-300 rounded focus:ring-gray-900 dark:focus:ring-white dark:ring-offset-gray-900 focus:ring-2 dark:bg-transparent dark:border-gray-600"
+              />
+              <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white flex items-center">
+                Add Gift Wrap
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-white/10 px-2 py-0.5 rounded-full">
+                  +{formatPrice(GIFT_WRAP_FEE)}
+                </span>
+              </span>
+            </label>
+            
+            <AnimatePresence>
+              {isGiftWrapped && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  className="overflow-hidden"
+                >
+                  <textarea
+                    placeholder="Enter your personalized gift message here..."
+                    value={giftMessage}
+                    onChange={(e) => setGiftMessage(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900 resize-none"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white mb-2">
             <p>Subtotal</p>
             <p>{formatPrice(subtotal)}</p>
+          </div>
+          {isGiftWrapped && (
+            <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+              <p>Gift Wrap</p>
+              <p>{formatPrice(GIFT_WRAP_FEE)}</p>
+            </div>
+          )}
+          <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white mb-4 pt-2 border-t border-gray-100 dark:border-white/5">
+            <p>Estimated Total</p>
+            <p>{formatPrice(totalAmount)}</p>
           </div>
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400 mb-6">
             Shipping and taxes calculated at checkout.
@@ -210,6 +298,20 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
               className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
               value={address.fullName} onChange={e => setAddress({...address, fullName: e.target.value})} 
             />
+            <div className="grid grid-cols-2 gap-3">
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
+                value={address.email || ''} onChange={e => setAddress({...address, email: e.target.value})} 
+              />
+              <input 
+                type="tel" 
+                placeholder="Phone Number" 
+                className="w-full px-3 py-2 border border-gray-200 dark:border-white/10 rounded-md bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 text-gray-900 dark:text-white text-sm focus:ring-1 focus:ring-gray-900" 
+                value={address.phone || ''} onChange={e => setAddress({...address, phone: e.target.value})} 
+              />
+            </div>
             <input 
               type="text" 
               placeholder="Address Line 1" 
@@ -276,9 +378,19 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
       </div>
 
       <div className="pt-6 border-t border-gray-100 dark:border-white/5 mt-auto">
-        <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white mb-6">
-          <p>Total</p>
+        <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white mb-2">
+          <p>Subtotal</p>
           <p>{formatPrice(subtotal)}</p>
+        </div>
+        {isGiftWrapped && (
+          <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <p>Gift Wrap</p>
+            <p>{formatPrice(GIFT_WRAP_FEE)}</p>
+          </div>
+        )}
+        <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white mb-6 pt-2 border-t border-gray-100 dark:border-white/5">
+          <p>Total</p>
+          <p>{formatPrice(totalAmount)}</p>
         </div>
         <button
           onClick={handleCheckout}
@@ -366,7 +478,7 @@ export default function Cart({ isOpen, onClose, items, onUpdateQuantity, onRemov
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-white dark:bg-[#0a0a0f] backdrop-blur-2xl border-l border-white/10 shadow-2xl"
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-[#FAFAFA] dark:bg-[#0A0A0A] shadow-2xl border-l border-gray-200 dark:border-gray-900"
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">

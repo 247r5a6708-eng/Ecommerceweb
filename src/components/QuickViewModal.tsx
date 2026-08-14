@@ -7,6 +7,7 @@ import { useCurrency } from '../contexts/CurrencyContext';
 import { useUser } from '../contexts/UserContext';
 import { useCatalog } from "../contexts/CatalogContext";
 import SafeProductImage from './SafeProductImage';
+import PriceChart from './PriceChart';
 
 interface QuickViewModalProps {
   cartItems?: any[];
@@ -175,6 +176,32 @@ export default function QuickViewModal({ cartItems = [], product, isOpen, onClos
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 {product.description}
               </p>
+
+              {product.priceHistory && product.priceHistory.length > 0 && (
+                <div className="mb-6 p-4 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                  <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center">
+                    <TrendingUp className="w-4 h-4 mr-1.5 text-blue-500" />
+                    Historical Price Trends
+                  </h4>
+                  <PriceChart data={product.priceHistory} />
+                </div>
+              )}
+
+              {product.inventory !== undefined && product.inventory > 0 && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-end mb-2">
+                    <p className={`text-sm font-bold ${product.inventory <= 5 ? 'text-amber-600 dark:text-amber-400 animate-pulse' : 'text-green-600 dark:text-green-400'}`}>
+                      {product.inventory <= 5 ? `Hurry! Only ${product.inventory} left in stock` : `${product.inventory} in stock`}
+                    </p>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className={`h-1.5 rounded-full ${product.inventory <= 5 ? 'bg-amber-500' : 'bg-green-500'}`} 
+                      style={{ width: `${Math.min(100, (product.inventory / 20) * 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
 
               {product.aiSummary && (
                 <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50">

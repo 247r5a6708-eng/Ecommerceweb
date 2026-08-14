@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, Order, WalletProduct, UserProfileData, Review } from '../types';
+import { Product, Order, WalletProduct, UserProfileData, Review, WishlistCollection } from '../types';
 import { db, auth } from '../lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -7,6 +7,10 @@ import { onAuthStateChanged } from 'firebase/auth';
 interface UserContextType {
   wishlistItems: string[];
   setWishlistItems: React.Dispatch<React.SetStateAction<string[]>>;
+  wishlistCollections: WishlistCollection[];
+  setWishlistCollections: React.Dispatch<React.SetStateAction<WishlistCollection[]>>;
+  priceAlerts: Record<string, number>;
+  setPriceAlerts: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   orders: Order[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   walletItems: WalletProduct[];
@@ -29,6 +33,8 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [wishlistItems, setWishlistItems] = useState<string[]>([]);
+  const [wishlistCollections, setWishlistCollections] = useState<WishlistCollection[]>([]);
+  const [priceAlerts, setPriceAlerts] = useState<Record<string, number>>({});
   const [orders, setOrders] = useState<Order[]>([]);
   const [walletItems, setWalletItems] = useState<WalletProduct[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfileData>(defaultProfile);
@@ -42,12 +48,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (docSnap.exists()) {
           const data = docSnap.data();
           setWishlistItems(data.wishlistItems || []);
+          setWishlistCollections(data.wishlistCollections || []);
+          setPriceAlerts(data.priceAlerts || {});
           setOrders(data.orders || []);
           setWalletItems(data.walletItems || []);
           setUserProfile(data.profile || { ...defaultProfile, email: user.email || '' });
         }
       } else {
         setWishlistItems([]);
+        setWishlistCollections([]);
+        setPriceAlerts({});
         setOrders([]);
         setWalletItems([]);
         setUserProfile(defaultProfile);
@@ -61,16 +71,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (auth.currentUser) {
       setDoc(doc(db, 'users', auth.currentUser.uid), {
         wishlistItems,
+        wishlistCollections,
+        priceAlerts,
         orders,
         walletItems,
         profile: userProfile
       }, { merge: true });
     }
-  }, [wishlistItems, orders, walletItems, userProfile]);
+  }, [wishlistItems, wishlistCollections, priceAlerts, orders, walletItems, userProfile]);
 
   return (
     <UserContext.Provider value={{
       wishlistItems, setWishlistItems,
+      wishlistCollections, setWishlistCollections,
+      priceAlerts, setPriceAlerts,
       orders, setOrders,
       walletItems, setWalletItems,
       userProfile, setUserProfile,

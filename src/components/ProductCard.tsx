@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { Product, Review } from '../types';
-import { Leaf, Wrench, Scale, Heart, Eye, Mail, ShoppingBag, Star, Share2, MessageCircle, Check, Copy, TrendingUp } from "lucide-react";
+import { Leaf, Wrench, Scale, Heart, Eye, Mail, ShoppingBag, Star, Share2, MessageCircle, Check, Copy, TrendingUp, TrendingDown, AlertTriangle, Plus } from "lucide-react";
 import PriceChart from './PriceChart';
 import QuickViewModal from './QuickViewModal';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'motion/react';
@@ -31,6 +31,16 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isHoveringImage, setIsHoveringImage] = useState(false);
+
+  const isPriceDrop = React.useMemo(() => {
+    if (isWishlisted && product.priceHistory && product.priceHistory.length > 1) {
+      const historyLength = product.priceHistory.length;
+      const latest = product.priceHistory[historyLength - 1].price;
+      const previous = product.priceHistory[historyLength - 2].price;
+      return latest < previous;
+    }
+    return false;
+  }, [isWishlisted, product.priceHistory]);
 
   const cardRef = useRef<HTMLDivElement>(null);
   
@@ -143,6 +153,12 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
           
           <div className="absolute top-4 left-4 flex flex-col space-y-2 z-20" style={{ transform: "translateZ(40px)" }}>
             <div className="flex space-x-1">
+                            {isPriceDrop && (
+                <div className="flex items-center space-x-1 bg-red-500/90 text-white backdrop-blur-md text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm border border-red-400" title="Price Dropped!">
+                  <TrendingDown className="w-3 h-3" />
+                  <span>Price Drop</span>
+                </div>
+              )}
               {product.sustainabilityGrade && (
                 <div className={`flex items-center space-x-1 ${product.sustainabilityGrade === 'A' || product.sustainabilityGrade === 'B' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-black/30 dark:bg-white/10 text-white border-white/20 dark:border-white/20'} backdrop-blur-md text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm border`} title="Sustainability Grade">
                   <Leaf className="w-3 h-3" />
@@ -153,6 +169,12 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
                 <div className="flex items-center space-x-1 bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm border border-white/20 dark:border-white/20" title="Repairability Score">
                   <Wrench className="w-3 h-3 text-blue-400" />
                   <span>{product.repairabilityScore}/10</span>
+                </div>
+              )}
+              {product.inventory !== undefined && product.inventory > 0 && product.inventory < 5 && (
+                <div className="flex items-center space-x-1 bg-amber-500/90 text-white backdrop-blur-md text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm border border-amber-400" title="Low Stock">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Low Stock: {product.inventory} left</span>
                 </div>
               )}
             </div>
@@ -198,7 +220,7 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
                 e.stopPropagation();
                 setIsQuickViewOpen(true);
               }}
-              className="flex-1 flex items-center justify-center space-x-2 bg-white/10 backdrop-blur-xl border border-white/20 dark:border-white/20 text-white py-3 px-3 rounded-2xl font-bold text-xs sm:text-sm shadow-xl hover:bg-white/20 transition-all"
+              className="flex-1 flex items-center justify-center space-x-2 bg-black/60 backdrop-blur-md border border-white/20 text-white py-3 px-4 rounded-xl font-medium text-xs sm:text-sm shadow-sm hover:bg-black/80 transition-all"
             >
               <Eye className="w-4 h-4" />
               <span className="hidden sm:inline">Quick View</span>
@@ -213,10 +235,10 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
                   onAddToCart(product);
                 }
               }}
-              className={`flex-1 flex items-center justify-center space-x-2 py-3 px-3 rounded-2xl font-bold text-xs sm:text-sm shadow-xl transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all ${
                 product.inStock === false
-                  ? 'bg-blue-600/80 backdrop-blur-xl hover:bg-blue-600 border border-blue-400 text-white'
-                  : 'bg-white text-black hover:bg-gray-200 border border-transparent'
+                  ? 'bg-gray-800 hover:bg-gray-900 border border-transparent text-white'
+                  : 'bg-white text-black hover:bg-gray-100 border border-transparent'
               }`}
             >
               {product.inStock === false ? (
@@ -292,7 +314,7 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
                     initial={{ opacity: 0, scale: 0.9, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                    className="absolute right-0 bottom-full mb-2 w-40 glass-panel rounded-xl shadow-xl py-2 z-50"
+                    className="absolute right-0 bottom-full mb-2 w-40 bg-white dark:bg-[#1A1A1A] rounded-lg shadow-xl py-2 z-50 border border-gray-100 dark:border-gray-800"
                   >
                     <button
                       onClick={handleWhatsApp}
