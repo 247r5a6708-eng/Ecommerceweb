@@ -37,13 +37,12 @@ import { useUser } from './contexts/UserContext';
 import { useCart } from './hooks/useCart';
 import { useSearch } from './hooks/useSearch';
 import { useRecentlyViewed } from './hooks/useRecentlyViewed';
-import { categories, productTypes } from './data';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import * as firestoreService from './lib/firestore';
 
 export default function App() {
-  const { products, isLoading } = useCatalog();
+  const { products, isLoading, categories, productTypes } = useCatalog();
 
   const { wishlistItems, setWishlistItems, orders, setOrders, walletItems, setWalletItems, userProfile, setUserProfile, priceAlerts } = useUser();
   const [reviews, setReviews] = useState<Record<string, Review[]>>({});

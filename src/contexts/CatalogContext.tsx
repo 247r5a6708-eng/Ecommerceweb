@@ -5,6 +5,8 @@ import { getProducts } from '../services/catalogService';
 interface CatalogContextType {
   products: Product[];
   isLoading: boolean;
+  categories: string[];
+  productTypes: string[];
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
@@ -12,6 +14,8 @@ const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
 export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [productTypes, setProductTypes] = useState<string[]>(['All']);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -19,6 +23,11 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       try {
         const data = await getProducts();
         setProducts(data);
+        
+        const uniqueCategories = ['All', ...Array.from(new Set(data.map(p => p.category).filter(Boolean)))];
+        const uniqueTypes = ['All', ...Array.from(new Set(data.map(p => p.type).filter(Boolean)))];
+        setCategories(uniqueCategories);
+        setProductTypes(uniqueTypes);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -29,7 +38,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   return (
-    <CatalogContext.Provider value={{ products, isLoading }}>
+    <CatalogContext.Provider value={{ products, isLoading, categories, productTypes }}>
       {children}
     </CatalogContext.Provider>
   );

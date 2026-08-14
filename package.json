@@ -11,7 +11,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "audit:images": "tsx scripts/images/image-audit.ts",
-    "audit:catalog": "tsx scripts/catalog/audit-catalog.ts"
+    "audit:catalog": "tsx scripts/catalog/audit-catalog.ts",
+    "seed:catalog": "tsx scripts/catalog/seed-catalog.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

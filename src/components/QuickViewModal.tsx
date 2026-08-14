@@ -173,7 +173,13 @@ export default function QuickViewModal({ cartItems = [], product, isOpen, onClos
               
               <p className="text-2xl font-medium text-gray-900 dark:text-white mb-6">{formatPrice(product.price)}</p>
               
+              
+              <div className="flex flex-col text-sm text-gray-500 dark:text-gray-400 mb-4 space-y-1">
+                {product.sku && <p>SKU: <span className="font-medium text-gray-900 dark:text-gray-300">{product.sku}</span></p>}
+                {product.seller && <p>Seller: <span className="font-medium text-gray-900 dark:text-gray-300">{product.seller}</span></p>}
+              </div>
               <p className="text-gray-600 dark:text-gray-300 mb-6">
+
                 {product.description}
               </p>
 

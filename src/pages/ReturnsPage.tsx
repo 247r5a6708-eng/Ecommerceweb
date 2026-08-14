@@ -36,6 +36,7 @@ export default function ReturnsPage() {
       itemId: selectedItem.id,
       itemName: selectedItem.name,
       itemImage: selectedItem.image,
+      sku: selectedItem.sku,
       reason,
       status: 'Pending',
       date: new Date().toISOString()
@@ -89,7 +90,7 @@ export default function ReturnsPage() {
                   >
                     <option value="">-- Choose an Item --</option>
                     {selectedOrder.items.map(i => (
-                      <option key={i.id} value={i.id}>{i.name} (Qty: {i.quantity})</option>
+                      <option key={i.id} value={i.id}>{i.name} {i.sku ? `(SKU: ${i.sku})` : ''} - Qty: {i.quantity}</option>
                     ))}
                   </select>
                 </div>
@@ -138,6 +139,7 @@ export default function ReturnsPage() {
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{ret.itemName}</p>
+                      {ret.sku && <p className="text-xs text-gray-400 mt-1">SKU: {ret.sku}</p>}
                       <p className="text-xs text-gray-400 mt-2">Requested on {new Date(ret.date).toLocaleDateString()}</p>
                     </div>
                   </div>

@@ -1,7 +1,6 @@
 import { Clock, ShoppingBag, User, Search, Menu, X, Heart, Settings, LogOut, Package, CreditCard, Scale, Sun, Moon, Mic, MicOff } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { categories } from '../data';
 import { useCurrency, Currency } from '../contexts/CurrencyContext';
 import { useCatalog } from '../contexts/CatalogContext';
 import SafeProductImage from './SafeProductImage';
@@ -106,7 +105,7 @@ export default function Navbar({
 
   const recognitionRef = useRef<any>(null);
   const { currency, setCurrency } = useCurrency();
-  const { products } = useCatalog();
+  const { products, categories } = useCatalog();
   const recommendedProducts = React.useMemo(() => {
     if (!searchQuery.trim()) return [];
     const query = searchQuery.toLowerCase();

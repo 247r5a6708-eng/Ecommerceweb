@@ -419,8 +419,14 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                                       imageClassName="rounded-lg object-cover"
                                     />
                                     <div className="flex-1 min-w-0">
+                                      
                                       <p className="text-gray-900 dark:text-gray-200 font-medium truncate">{item.name}</p>
-                                      <p className="text-gray-500 dark:text-gray-400 mt-0.5">Qty: {item.quantity}</p>
+                                      <div className="flex text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-x-2">
+                                        <span>Qty: {item.quantity}</span>
+                                        {item.sku && <span>SKU: {item.sku}</span>}
+                                        {item.seller && <span>Sold by: {item.seller}</span>}
+                                      </div>
+
                                     </div>
                                     <p className="text-gray-900 dark:text-white ml-2 font-medium">{formatPrice((item.price * item.quantity))}</p>
                                   </li>
@@ -472,7 +478,13 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                               imageClassName="w-16 h-16 rounded-lg object-cover" 
                             />
                             <div className="flex-1 min-w-0">
+                              
                               <h4 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">{item.product.name}</h4>
+                              <div className="flex text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 space-x-2 font-medium">
+                                {item.product.sku && <span>SKU: {item.product.sku}</span>}
+                                {item.product.seller && <span>Sold by: {item.product.seller}</span>}
+                              </div>
+
                               <p className="text-xs font-bold text-green-500 mt-1">Estimated Trade-in Value: {formatPrice(item.product.price * 0.3)}</p>
                               <div className="flex items-center space-x-2 mt-2">
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${item.warrantyStatus === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
