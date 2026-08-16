@@ -162,7 +162,7 @@ export default function Wishlist({ isOpen, onClose, items, onRemoveItem, onClear
         )}
         <div className="h-24 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111111] border-gray-200 dark:border-gray-800">
           <SafeProductImage
-            src={item.image}
+            src={item.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'}
             alt={item.name}
             className="h-full w-full"
             imageClassName="h-full w-full object-cover object-center"

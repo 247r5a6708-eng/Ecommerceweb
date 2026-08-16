@@ -214,6 +214,7 @@ export interface UserProfileData {
   phone: string;
   address: string;
   avatar: string;
+  isAdmin?: boolean;
 }
 
 export interface WalletProduct {

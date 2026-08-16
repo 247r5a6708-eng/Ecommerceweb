@@ -104,7 +104,7 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
                       </button>
                       <div className="aspect-[4/3] bg-gray-100 dark:bg-white/10 rounded-xl overflow-hidden mb-4 relative">
                         <SafeProductImage 
-                          src={product.image} 
+                          src={product.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'} 
                           alt={product.name} 
                           className="w-full h-full"
                           imageClassName="w-full h-full object-cover"

@@ -185,7 +185,7 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
               <li key={item.id} className="flex py-6">
                 <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-white/10">
                   <SafeProductImage
-                    src={item.image}
+                    src={item.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'}
                     alt={item.name}
                     className="h-full w-full"
                     imageClassName="h-full w-full object-cover object-center"

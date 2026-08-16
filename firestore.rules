@@ -6,6 +6,11 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'kumarrachith0@gmail.com';
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
@@ -28,7 +33,7 @@ service cloud.firestore {
 
     // User private data
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if isOwner(userId) || isAdmin();
       
       match /data/{document=**} { allow read, write: if isOwner(userId); }
       match /cart/{document=**} { allow read, write: if isOwner(userId); }
@@ -39,6 +44,18 @@ service cloud.firestore {
       match /serviceRecords/{document=**} { allow read: if isOwner(userId); allow write: if false; } 
     }
     
+    
+    
+    match /{path=**}/orders/{orderId} {
+      allow read: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read, write: if isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
     // Reviews
     match /reviews/{reviewId} {
       allow read: if true;

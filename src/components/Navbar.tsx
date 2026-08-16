@@ -3,6 +3,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCurrency, Currency } from '../contexts/CurrencyContext';
 import { useCatalog } from '../contexts/CatalogContext';
+import { useUser } from '../contexts/UserContext';
+import { Link } from 'react-router-dom';
+import { Shield } from 'lucide-react';
 import SafeProductImage from './SafeProductImage';
 
 interface NavbarProps {
@@ -105,6 +108,8 @@ export default function Navbar({
 
   const recognitionRef = useRef<any>(null);
   const { currency, setCurrency } = useCurrency();
+  const { userProfile } = useUser();
+  const isAdmin = userProfile?.email === 'kumarrachith0@gmail.com' || userProfile?.isAdmin;
   const { products, categories } = useCatalog();
   const recommendedProducts = React.useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -229,6 +234,15 @@ export default function Navbar({
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-1 items-center bg-white/50 dark:bg-white/5 p-1 rounded-full backdrop-blur-md border border-gray-200 dark:border-white/10">
+            {isAdmin && (
+              <Link 
+                to="/admin"
+                className="font-bold px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md text-sm tracking-wide bg-gray-900 text-white dark:bg-white dark:text-black shadow-sm flex items-center"
+                aria-label="Admin Portal"
+              >
+                <Shield className="w-4 h-4 mr-2" /> Admin
+              </Link>
+            )}
             {categories.slice(1).map(category => (
               <button
                 key={category}
@@ -313,7 +327,7 @@ export default function Navbar({
                             className="w-full flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
                           >
                             <SafeProductImage
-                              src={product.image}
+                              src={product.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'}
                               alt={product.name}
                               className="w-8 h-8 mr-3 rounded bg-gray-100 flex-shrink-0"
                               imageClassName="w-8 h-8 rounded object-cover"
@@ -389,6 +403,7 @@ export default function Navbar({
               )}
             </button>
 
+            
             <button 
               onClick={onOpenProfile}
               className="hidden sm:flex p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -491,7 +506,7 @@ export default function Navbar({
                               className="w-full flex items-center px-4 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors text-gray-700 dark:text-gray-300 group text-sm"
                             >
                               <SafeProductImage
-                                src={product.image}
+                                src={product.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'}
                                 alt={product.name}
                                 className="w-10 h-10 mr-3 rounded-md bg-gray-100 flex-shrink-0"
                                 imageClassName="w-10 h-10 rounded-md object-cover"
@@ -515,6 +530,16 @@ export default function Navbar({
               </div>
               
               <div className="grid grid-cols-2 gap-2 pb-4 border-b border-gray-100 dark:border-white/5">
+                {isAdmin && (
+                  <Link 
+                    to="/admin"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="col-span-2 flex items-center justify-center space-x-2 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold mb-2 transition-colors"
+                  >
+                    <Shield className="w-5 h-5" />
+                    <span>Admin Portal</span>
+                  </Link>
+                )}
                 <button 
                   onClick={() => { setIsMobileMenuOpen(false); onOpenProfile(); }}
                   className="flex items-center justify-center space-x-2 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 font-medium"

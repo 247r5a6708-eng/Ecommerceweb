@@ -243,11 +243,17 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                     <div className="flex items-start justify-between mb-6">
                       <div className="flex items-center space-x-4">
                         <div className="relative">
-                          <img 
-                            src={user.avatar} 
-                            alt={user.name} 
-                            className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 dark:border-white/5 shadow-sm"
-                          />
+                          {user.avatar ? (
+    <img 
+      src={user.avatar} 
+      alt={user.name || 'User avatar'} 
+      className="w-20 h-20 rounded-full object-cover border-4 border-gray-50 dark:border-white/5 shadow-sm"
+    />
+  ) : (
+    <div className="w-20 h-20 rounded-full border-4 border-gray-50 dark:border-white/5 shadow-sm bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500">
+      <User className="w-8 h-8" />
+    </div>
+  )}
                         </div>
                         <div>
                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">{user.name}</h3>

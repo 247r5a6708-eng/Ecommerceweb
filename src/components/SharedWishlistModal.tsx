@@ -78,7 +78,7 @@ export default function SharedWishlistModal({
                       <div className="flex space-x-4 mb-4">
                         <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-white/5">
                           <SafeProductImage
-                            src={product.image}
+                            src={product.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'}
                             alt={product.name}
                             className="w-full h-full"
                             imageClassName="w-full h-full object-cover"

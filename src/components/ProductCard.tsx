@@ -139,7 +139,7 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
         >
           {product.image ? (
             <SafeProductImage 
-              src={product.image} 
+              src={product.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'} 
               alt={product.name} 
               className="absolute inset-0 w-full h-full"
               style={{

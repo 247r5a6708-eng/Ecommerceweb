@@ -143,7 +143,7 @@ export default function QuickViewModal({ cartItems = [], product, isOpen, onClos
 
             <div className="md:w-1/2 bg-gray-100 dark:bg-white/10 relative">
               <SafeProductImage 
-                src={product.image} 
+                src={product.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'} 
                 alt={product.name} 
                 className="w-full h-64 md:h-full"
                 imageClassName="w-full h-full object-cover"
@@ -241,7 +241,7 @@ export default function QuickViewModal({ cartItems = [], product, isOpen, onClos
                     {freqBoughtProducts.map(fbProduct => (
                       <div key={fbProduct.id} className="flex items-center space-x-4 bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-gray-100 dark:border-white/10">
                         <SafeProductImage
-                          src={fbProduct.image}
+                          src={fbProduct.image || 'https://images.unsplash.com/photo-1560393464-5c69a73c5770?auto=format&fit=crop&q=80&w=500'}
                           alt={fbProduct.name}
                           className="w-16 h-16 rounded-lg bg-white dark:bg-[#121216]"
                           imageClassName="w-full h-full object-cover"

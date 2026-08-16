@@ -8,6 +8,8 @@ import React from "react";
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import AdminAuditOverlay from './components/AdminAuditOverlay';
+import AdminPortal from './pages/AdminPortal';
 import AIChatBot from './components/AIChatBot';
 import Hero from './components/Hero';
 import ProductGrid from './components/ProductGrid';
@@ -42,6 +44,8 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import * as firestoreService from './lib/firestore';
 
 export default function App() {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
   const { products, isLoading, categories, productTypes } = useCatalog();
 
   const { wishlistItems, setWishlistItems, orders, setOrders, walletItems, setWalletItems, userProfile, setUserProfile, priceAlerts } = useUser();
@@ -222,6 +226,7 @@ export default function App() {
     const timer = setTimeout(() => {
       setIsProductsLoading(false);
     }, 600);
+  
     return () => clearTimeout(timer);
   }, [searchQuery, activeType, sortOption]);
 
@@ -465,6 +470,18 @@ export default function App() {
 
   const availableTypes: string[] = ['All', ...Array.from(new Set(products.filter(p => activeCategory === 'All' || p.category === activeCategory).map(p => p.type))) as string[]];
 
+  
+  if (isAdminRoute) {
+    return (
+      <div className="font-sans">
+        <Routes>
+          <Route path="/admin/*" element={<AdminPortal />} />
+        </Routes>
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0A0A0A] font-sans text-[#111] dark:text-[#FAFAFA] selection:bg-gray-300 dark:selection:bg-white/20 transition-colors duration-500 relative">
       
@@ -550,6 +567,7 @@ export default function App() {
           </>
         } />
         <Route path="/returns" element={<ReturnsPage />} />
+        
         <Route path="/product/:productId" element={<ProductPage cartItems={cartItems} onAddToCart={handleAddToCart} reviews={reviews} onNotifyMe={setNotifyProduct} />} />
       </Routes>
 

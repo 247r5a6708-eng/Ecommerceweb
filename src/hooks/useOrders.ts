@@ -38,7 +38,7 @@ export function useOrders(firebaseUser: any, userProfile: any) {
       status: 'processing',
       address: shippingAddress,
       isGiftWrapped,
-      giftMessage,
+      giftMessage: giftMessage || '',
       giftWrapFee
     };
 
