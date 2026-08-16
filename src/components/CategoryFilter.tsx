@@ -61,7 +61,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
                 <button
                   key={type}
                   onClick={() => onTypeChange(type)}
-                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                  className={`px-4 sm:px-5 py-2.5 sm:py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
                     activeType === type
                       ? 'bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 shadow-sm'
                       : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
@@ -77,7 +77,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
           <div className="relative z-50 w-full sm:w-auto flex-shrink-0" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full sm:w-auto flex items-center justify-between bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-between bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 sm:py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <span>{activeSortLabel}</span>
               <ChevronDown className={`ml-2 h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -92,7 +92,7 @@ export default function CategoryFilter({ activeType, availableTypes, onTypeChang
                       onSortChange(option.value);
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                    className={`w-full text-left px-4 py-3 sm:py-2 text-sm transition-colors ${
                       sortOption === option.value
                         ? 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'

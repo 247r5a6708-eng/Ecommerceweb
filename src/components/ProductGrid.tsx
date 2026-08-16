@@ -151,7 +151,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
     <div id="products" className="bg-transparent pt-8 pb-32 sm:py-12 transition-colors relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {isLoading ? (
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8">
+           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-6 sm:gap-y-10 gap-x-3 sm:gap-x-6 xl:gap-x-8">
              {Array.from({ length: 8 }).map((_, i) => (
                <ProductCardSkeleton key={i} />
              ))}
@@ -188,7 +188,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
             }}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8"
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-6 sm:gap-y-10 gap-x-3 sm:gap-x-6 xl:gap-x-8"
           >
             <AnimatePresence mode="popLayout">
               {filteredProducts.map((product) => (
@@ -227,7 +227,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
               You Might Also Like
             </h2>
             <motion.div 
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-10 gap-x-6 xl:gap-x-8"
+              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-6 sm:gap-y-10 gap-x-3 sm:gap-x-6 xl:gap-x-8"
               variants={{
                 hidden: { opacity: 0 },
                 show: {

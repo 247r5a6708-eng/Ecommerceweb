@@ -10,7 +10,7 @@ export default function ProductCardSkeleton() {
           className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent blur-md"
         />
       </div>
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col p-3 sm:p-5">
         <div className="flex justify-between items-start mb-2">
           <div className="w-full">
             <div className="h-3 w-16 bg-gray-200 dark:bg-white/10 rounded animate-pulse mb-2" />
