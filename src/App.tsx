@@ -247,36 +247,6 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
-      if (user) {
-        // Fetch data from Firestore
-        const profile = await firestoreService.getUserProfile(user.uid);
-        if (profile) {
-          setUserProfile(prev => ({
-            ...prev,
-            ...profile,
-            name: user.displayName || profile.name || prev.name,
-            email: user.email || profile.email || prev.email,
-          }));
-        } else {
-          setUserProfile(prev => ({
-            ...prev,
-            name: user.displayName || prev.name,
-            email: user.email || prev.email,
-          }));
-        }
-
-        const fbOrders = await firestoreService.getUserOrders(user.uid);
-        if (fbOrders.length > 0) setOrders(fbOrders);
-
-        const fbWishlist = await firestoreService.getUserWishlist(user.uid);
-        if (fbWishlist.length > 0) setWishlistItems(fbWishlist);
-
-        const fbWallet = await firestoreService.getUserWallet(user.uid);
-        if (fbWallet.length > 0) setWalletItems(fbWallet);
-
-
-      } else {
-      }
     });
     return () => unsubscribe();
   }, []);
@@ -367,6 +337,8 @@ export default function App() {
 
     if (firebaseUser) {
        firestoreService.saveOrder(firebaseUser.uid, order);
+    } else {
+       firestoreService.saveOrder('guest', order);
     }
     
     // Add to digital wallet

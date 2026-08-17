@@ -10,6 +10,11 @@ import Placeholder from './admin/Placeholder';
 import AdminProducts from './admin/Products';
 import AdminOrders from './admin/Orders';
 import AdminCustomers from './admin/Customers';
+import SalesOverview from './admin/SalesOverview';
+import Customer360 from './admin/Customer360';
+import Invoices from './admin/Invoices';
+import Analytics from './admin/Analytics';
+import LowStock from './admin/LowStock';
 
 import AdminImport from './admin/ImportData';
 
@@ -42,6 +47,7 @@ const NAV_SECTIONS = [
     title: "Catalog",
     items: [
       { name: "Products", path: "/admin/products", icon: Package },
+      { name: "Low Stock", path: "/admin/low-stock", icon: AlertTriangle },
       { name: "Categories", path: "/admin/categories", icon: FolderTree },
       { name: "Import Data", path: "/admin/import", icon: Upload }
     ]
@@ -56,7 +62,7 @@ const NAV_SECTIONS = [
 ];
 
 // Re-importing missing icons directly for scope
-import { TrendingUp, FileText, FolderTree, Upload, LineChart } from 'lucide-react';
+import { TrendingUp, FileText, FolderTree, Upload, LineChart, AlertTriangle } from 'lucide-react';
 
 export default function AdminPortal() {
   const { userProfile } = useUser();
@@ -236,15 +242,16 @@ export default function AdminPortal() {
         <main className="flex-1 overflow-y-auto p-6 md:p-8">
           <Routes>
             <Route path="/" element={<AdminDashboard />} />
-            <Route path="/sales-overview" element={<Placeholder title="Sales Overview" />} />
+            <Route path="/sales-overview" element={<SalesOverview />} />
             <Route path="/orders" element={<AdminOrders />} />
-            <Route path="/invoices" element={<Placeholder title="Invoices System" />} />
+            <Route path="/invoices" element={<Invoices />} />
             <Route path="/customers" element={<AdminCustomers />} />
-            <Route path="/customer-360" element={<Placeholder title="Customer 360 View" />} />
+            <Route path="/customer-360" element={<Customer360 />} />
             <Route path="/products" element={<AdminProducts />} />
+            <Route path="/low-stock" element={<LowStock />} />
             <Route path="/categories" element={<Placeholder title="Category Taxonomy" />} />
             <Route path="/import" element={<AdminImport />} />
-            <Route path="/analytics" element={<Placeholder title="Analytics & Reports" />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="/settings" element={<Placeholder title="Portal Settings" />} />
             <Route path="*" element={<Placeholder title="Module Not Found" />} />
           </Routes>

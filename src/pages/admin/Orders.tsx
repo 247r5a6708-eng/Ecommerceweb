@@ -1,33 +1,76 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getAllOrders } from '../../services/adminService';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, ShoppingCart, Search, FileText, ChevronRight, X, User } from 'lucide-react';
+import { Loader2, ShoppingCart, FileText, ChevronRight, X, User } from 'lucide-react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { TableControls, filterByDateRange } from '../../components/admin/TableControls';
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  
+  const itemsPerPage = 10;
 
   useEffect(() => {
-    loadOrders();
+    const loadOrders = async () => {
+      try {
+        const allOrders = await getAllOrders();
+        setOrders(allOrders);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Set up real-time listener on users collection
+    const unsubscribe = onSnapshot(collection(db, 'users'), () => {
+      loadOrders();
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const loadOrders = async () => {
-    setLoading(true);
-    try {
-      const allOrders = await getAllOrders();
-      setOrders(allOrders);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+  // Filter and Paginate
+  const processedOrders = useMemo(() => {
+    let result = orders;
+    
+    // 1. Search Filter
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(o => 
+        o.id.toLowerCase().includes(lower) ||
+        (o.customerEmail && o.customerEmail.toLowerCase().includes(lower))
+      );
     }
-  };
+    
+    // 2. Date Filter
+    result = filterByDateRange(result, 'createdAt', dateFilter);
+    // If not createdAt, fallback to date
+    if (result.length === 0 && orders.length > 0 && orders[0].date) {
+        result = filterByDateRange(result, 'date', dateFilter);
+    }
+    
+    return result;
+  }, [orders, searchTerm, dateFilter]);
 
-  const filteredOrders = orders.filter(o => 
-    o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (o.customerEmail && o.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()))
+  const totalPages = Math.ceil(processedOrders.length / itemsPerPage);
+  
+  // Reset page if out of bounds
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedOrders = processedOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
@@ -37,17 +80,20 @@ export default function AdminOrders() {
           <h2 className="text-2xl font-bold text-gray-900">Orders Management</h2>
           <p className="text-gray-500 text-sm mt-1">Real-time database sync active</p>
         </div>
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search by Order ID or Email..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-gray-900 focus:ring-1 focus:ring-gray-900 w-64 md:w-80"
-          />
-        </div>
       </div>
+      
+      <TableControls
+        searchTerm={searchTerm}
+        onSearchChange={(val) => { setSearchTerm(val); setCurrentPage(1); }}
+        searchPlaceholder="Search by Order ID or Email..."
+        dateFilter={dateFilter}
+        onDateFilterChange={(val) => { setDateFilter(val); setCurrentPage(1); }}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        itemsPerPage={itemsPerPage}
+        totalItems={processedOrders.length}
+      />
       
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
@@ -71,7 +117,7 @@ export default function AdminOrders() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredOrders.map(order => {
+                {paginatedOrders.map(order => {
                   const date = order.createdAt?.seconds 
                     ? new Date(order.createdAt.seconds * 1000).toLocaleDateString()
                     : (order.createdAt || 'N/A');
@@ -89,7 +135,7 @@ export default function AdminOrders() {
                       </span>
                     </td>
                     <td className="p-4 text-sm font-bold text-gray-900 text-right">
-                      ₹{(order.totalAmount || 0).toLocaleString('en-IN')}
+                      ₹{(order.total || order.totalAmount || 0).toLocaleString('en-IN')}
                     </td>
                     <td className="p-4 text-right">
                       <button 
@@ -198,7 +244,7 @@ export default function AdminOrders() {
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex justify-between items-center text-sm mb-2">
                     <span className="text-gray-500">Subtotal</span>
-                    <span className="font-medium">₹{(selectedOrder.totalAmount || 0).toLocaleString('en-IN')}</span>
+                    <span className="font-medium">₹{(selectedOrder.total || selectedOrder.totalAmount || 0).toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm mb-2">
                     <span className="text-gray-500">Shipping</span>
@@ -206,7 +252,7 @@ export default function AdminOrders() {
                   </div>
                   <div className="flex justify-between items-center text-lg font-bold mt-4 pt-4 border-t border-gray-100">
                     <span>Total Amount</span>
-                    <span>₹{(selectedOrder.totalAmount || 0).toLocaleString('en-IN')}</span>
+                    <span>₹{(selectedOrder.total || selectedOrder.totalAmount || 0).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 

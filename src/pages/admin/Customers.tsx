@@ -1,32 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getAllCustomers } from '../../services/adminService';
 import { motion } from 'motion/react';
-import { Loader2, Users, Search, ChevronRight, Mail, Calendar, MapPin } from 'lucide-react';
+import { Loader2, Users, ChevronRight, Mail, Calendar, MapPin } from 'lucide-react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { TableControls, filterByDateRange } from '../../components/admin/TableControls';
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
-    loadCustomers();
+    const loadCustomers = async () => {
+      try {
+        const allCustomers = await getAllCustomers();
+        setCustomers(allCustomers);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Set up real-time listener on users collection
+    const unsubscribe = onSnapshot(collection(db, 'users'), () => {
+      loadCustomers();
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const loadCustomers = async () => {
-    setLoading(true);
-    try {
-      const allCustomers = await getAllCustomers();
-      setCustomers(allCustomers);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+  // Filter and Paginate
+  const processedCustomers = useMemo(() => {
+    let result = customers;
+    
+    // 1. Search Filter
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(c => 
+        (c.email && c.email.toLowerCase().includes(lower)) ||
+        (c.name && c.name.toLowerCase().includes(lower))
+      );
     }
-  };
+    
+    // 2. Date Filter
+    result = filterByDateRange(result, 'createdAt', dateFilter);
+    
+    return result;
+  }, [customers, searchTerm, dateFilter]);
 
-  const filteredCustomers = customers.filter(c => 
-    (c.email && c.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (c.name && c.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const totalPages = Math.ceil(processedCustomers.length / itemsPerPage);
+  
+  // Reset page if out of bounds
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedCustomers = processedCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
@@ -36,17 +74,20 @@ export default function AdminCustomers() {
           <h2 className="text-2xl font-bold text-gray-900">Customer Directory</h2>
           <p className="text-gray-500 text-sm mt-1">Real-time database sync active</p>
         </div>
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search by Name or Email..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:border-gray-900 focus:ring-1 focus:ring-gray-900 w-64 md:w-80"
-          />
-        </div>
       </div>
+      
+      <TableControls
+        searchTerm={searchTerm}
+        onSearchChange={(val) => { setSearchTerm(val); setCurrentPage(1); }}
+        searchPlaceholder="Search by Name or Email..."
+        dateFilter={dateFilter}
+        onDateFilterChange={(val) => { setDateFilter(val); setCurrentPage(1); }}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        itemsPerPage={itemsPerPage}
+        totalItems={processedCustomers.length}
+      />
       
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
@@ -69,7 +110,7 @@ export default function AdminCustomers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredCustomers.map(customer => {
+                {paginatedCustomers.map(customer => {
                   const date = customer.createdAt?.seconds 
                     ? new Date(customer.createdAt.seconds * 1000).toLocaleDateString()
                     : (customer.createdAt || 'N/A');
@@ -77,7 +118,7 @@ export default function AdminCustomers() {
                   <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4 flex items-center space-x-3">
                       <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                        {customer.name ? customer.name.charAt(0).toUpperCase() : customer.email.charAt(0).toUpperCase()}
+                        {customer.name ? customer.name.charAt(0).toUpperCase() : (customer.email ? customer.email.charAt(0).toUpperCase() : 'G')}
                       </div>
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{customer.name || 'Anonymous User'}</p>

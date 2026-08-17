@@ -54,8 +54,24 @@ export const getUserOrders = async (userId: string): Promise<Order[]> => {
 
 export const saveOrder = async (userId: string, order: Order) => {
   try {
+    // Ensure the parent user document exists so the admin service can find it
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, { lastActivity: new Date().toISOString() }, { merge: true });
+
     const docRef = doc(db, `users/${userId}/orders`, order.id);
-    await setDoc(docRef, order);
+    const orderData = {
+      ...order,
+      totalAmount: order.total || (order as any).totalAmount || 0,
+      customerEmail: order.address?.email || '',
+      customerName: order.address?.fullName || '',
+      customerPhone: order.address?.phone || '',
+      createdAt: order.date || new Date().toISOString()
+    };
+    
+    // Firestore cannot accept undefined values, so we safely strip them out deeply
+    const cleanOrderData = JSON.parse(JSON.stringify(orderData));
+    
+    await setDoc(docRef, cleanOrderData);
   } catch (error) {
     console.error("Error saving order:", error);
   }

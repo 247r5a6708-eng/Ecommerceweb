@@ -33,15 +33,15 @@ service cloud.firestore {
 
     // User private data
     match /users/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+      allow read, write: if true;
       
-      match /data/{document=**} { allow read, write: if isOwner(userId); }
-      match /cart/{document=**} { allow read, write: if isOwner(userId); }
-      match /wishlist/{document=**} { allow read, write: if isOwner(userId); }
-      match /orders/{document=**} { allow read: if isOwner(userId); allow create: if isOwner(userId); allow update, delete: if false; } // Can't update order status from client
-      match /returns/{document=**} { allow read: if isOwner(userId); allow create: if isOwner(userId); allow update, delete: if false; } // Can't approve returns from client
-      match /owned-products/{document=**} { allow read, write: if isOwner(userId); } // Changed from ownedProducts to owned-products
-      match /serviceRecords/{document=**} { allow read: if isOwner(userId); allow write: if false; } 
+      match /data/{document=**} { allow read, write: if true; }
+      match /cart/{document=**} { allow read, write: if true; }
+      match /wishlist/{document=**} { allow read, write: if true; }
+      match /orders/{document=**} { allow read, write: if true; }
+      match /returns/{document=**} { allow read, write: if true; }
+      match /owned-products/{document=**} { allow read, write: if true; }
+      match /serviceRecords/{document=**} { allow read, write: if true; }
     }
     
     

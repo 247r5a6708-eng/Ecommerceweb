@@ -1,36 +1,97 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
-import { getDashboardMetrics, getRecentOrders } from '../../services/adminService';
-import { IndianRupee, ShoppingCart, Users, Package, AlertTriangle, TrendingUp, ShieldCheck } from 'lucide-react';
+import { getDashboardMetrics, getRecentOrders, getRecentActivity } from '../../services/adminService';
+import { IndianRupee, ShoppingCart, Users, Package, AlertTriangle, TrendingUp, ShieldCheck, Activity } from 'lucide-react';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import { TableControls, filterByDateRange } from '../../components/admin/TableControls';
 
 export default function AdminDashboard() {
   const [metrics, setMetrics] = useState<any>(null);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [allRecentOrders, setAllRecentOrders] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Table Controls State
   const [orderFilter, setOrderFilter] = useState('all');
-  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [dateFilter, setDateFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     async function loadData() {
-      const [m, orders] = await Promise.all([
-        getDashboardMetrics(),
-        getRecentOrders(5, 'all')
-      ]);
-      setMetrics(m);
-      setRecentOrders(orders);
-      setLoading(false);
+      try {
+        // Fetch a large pool of orders to filter locally for the dashboard
+        const [m, orders, acts] = await Promise.all([
+          getDashboardMetrics(),
+          getRecentOrders(50, 'all'), 
+          getRecentActivity()
+        ]);
+        setMetrics(m);
+        setAllRecentOrders(orders);
+        setActivities(acts);
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
     }
-    loadData();
+
+    // Set up real-time listener on users collection
+    // Whenever a user is added or updated (e.g., when they place an order, as lastActivity is updated), 
+    // we reload the dashboard metrics.
+    const unsubscribe = onSnapshot(collection(db, 'users'), () => {
+      loadData();
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const handleFilterChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setOrderFilter(val);
-    setOrdersLoading(true);
-    const orders = await getRecentOrders(5, val);
-    setRecentOrders(orders);
-    setOrdersLoading(false);
+  // Process Orders for Dashboard
+  const processedOrders = useMemo(() => {
+    let result = allRecentOrders;
+    
+    if (orderFilter !== 'all') {
+      result = result.filter(o => 
+        (o.status && o.status.toLowerCase() === orderFilter.toLowerCase()) ||
+        (orderFilter === 'pending' && !o.status)
+      );
+    }
+    
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(o => 
+        o.id.toLowerCase().includes(lower) ||
+        (o.customerEmail && o.customerEmail.toLowerCase().includes(lower))
+      );
+    }
+    
+    result = filterByDateRange(result, 'createdAt', dateFilter);
+    if (result.length === 0 && allRecentOrders.length > 0 && allRecentOrders[0].date) {
+        result = filterByDateRange(result, 'date', dateFilter);
+    }
+    
+    return result;
+  }, [allRecentOrders, orderFilter, searchTerm, dateFilter]);
+
+  const totalPages = Math.ceil(processedOrders.length / itemsPerPage);
+  
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedOrders = processedOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleStatusFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setOrderFilter(e.target.value);
+    setCurrentPage(1);
   };
 
   if (loading) {
@@ -119,14 +180,13 @@ export default function AdminDashboard() {
         
         {/* Recent Orders */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <div className="flex items-center space-x-4">
-              <h3 className="font-bold text-gray-900 font-sans">Recent Orders</h3>
+          <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-gray-50/50 gap-4">
+            <h3 className="font-bold text-gray-900 font-sans">Recent Orders</h3>
+            <div className="flex flex-wrap items-center gap-3">
               <select 
                 value={orderFilter}
-                onChange={handleFilterChange}
-                disabled={ordersLoading}
-                className="text-xs font-medium border-gray-200 rounded-lg text-gray-600 focus:ring-gray-900 focus:border-gray-900 py-1.5 pl-3 pr-8 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                onChange={handleStatusFilterChange}
+                className="text-xs font-medium border-gray-200 rounded-lg text-gray-600 focus:ring-gray-900 focus:border-gray-900 py-1.5 pl-3 pr-8 shadow-sm transition-colors cursor-pointer"
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
@@ -134,20 +194,29 @@ export default function AdminDashboard() {
                 <option value="delivered">Delivered</option>
               </select>
             </div>
-            <button className="text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors">View All</button>
+          </div>
+          
+          <div className="p-4 border-b border-gray-100">
+            <TableControls
+              searchTerm={searchTerm}
+              onSearchChange={(val) => { setSearchTerm(val); setCurrentPage(1); }}
+              searchPlaceholder="Search Orders..."
+              dateFilter={dateFilter}
+              onDateFilterChange={(val) => { setDateFilter(val); setCurrentPage(1); }}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={processedOrders.length}
+            />
           </div>
           
           <div className="relative flex-1">
-            {ordersLoading && (
-              <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-sm flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
             
-            {recentOrders.length === 0 ? (
+            {paginatedOrders.length === 0 ? (
               <div className="p-12 text-center h-full flex flex-col items-center justify-center">
                 <ShoppingCart className="w-10 h-10 text-gray-300 mb-3" />
-                <p className="text-gray-500 font-medium">No orders found for this status</p>
+                <p className="text-gray-500 font-medium">No orders found for this criteria</p>
               </div>
             ) : (
             <table className="w-full text-left text-sm">
@@ -160,14 +229,14 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {recentOrders.map((order) => (
+                {paginatedOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 font-mono text-xs">{order.id}</td>
                     <td className="px-6 py-4">{order.customerEmail || 'Guest'}</td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium uppercase tracking-wider">{order.status || 'Pending'}</span>
                     </td>
-                    <td className="px-6 py-4 text-right font-medium">₹{(order.totalAmount || 0).toLocaleString('en-IN')}</td>
+                    <td className="px-6 py-4 text-right font-medium">₹{(order.total || order.totalAmount || 0).toLocaleString('en-IN')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -176,24 +245,40 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* System Health */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="font-bold text-gray-900 font-sans">System Health</h3>
+        {/* Activity Feed */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <h3 className="font-bold text-gray-900 font-sans flex items-center">
+              <Activity className="w-4 h-4 mr-2 text-blue-600" /> 
+              Activity Feed
+            </h3>
           </div>
-          <div className="p-6 space-y-4">
-             <div className="flex justify-between items-center">
-               <span className="text-sm text-gray-600">Database Connection</span>
-               <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full"><span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></span> ONLINE</span>
-             </div>
-             <div className="flex justify-between items-center">
-               <span className="text-sm text-gray-600">Catalog Health</span>
-               <span className="flex items-center text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full">100% VALID</span>
-             </div>
-             <div className="flex justify-between items-center">
-               <span className="text-sm text-gray-600">Pending Actions</span>
-               <span className="text-xs font-bold text-gray-500">0</span>
-             </div>
+          <div className="p-6 overflow-y-auto max-h-[500px]">
+            {activities.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-10">No recent activity</p>
+            ) : (
+              <div className="space-y-6">
+                {activities.map((activity, idx) => (
+                  <div key={`${activity.id}-${idx}`} className="flex gap-4 relative">
+                    {idx !== activities.length - 1 && (
+                      <div className="absolute left-4 top-10 bottom-[-24px] w-0.5 bg-gray-100"></div>
+                    )}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 ${
+                      activity.type === 'signup' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                    }`}>
+                      {activity.type === 'signup' ? <Users className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{activity.title}</p>
+                      <p className="text-sm text-gray-600 mt-0.5">{activity.description}</p>
+                      <p className="text-xs text-gray-400 mt-1 font-mono">
+                        {activity.date.toLocaleDateString()} {activity.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

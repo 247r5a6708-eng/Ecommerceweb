@@ -1,6 +1,6 @@
 import { collection, getDocs, doc, writeBatch, deleteDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { 
+import { db } from '../lib/firebase.ts';
+import type { 
   Product, 
   ProductVariant, 
   ProductModel, 
@@ -11,7 +11,7 @@ import {
   PriceRecord, 
   InventoryItem,
   SKU
-} from '../types';
+} from '../types.ts';
 
 let catalogCache: Product[] | null = null;
 let lastCacheTime = 0;

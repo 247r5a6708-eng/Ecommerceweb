@@ -53,8 +53,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
           firestoreService.getUserWishlist(user.uid)
         ]);
 
-        if (profile) setUserProfile(profile);
-        else setUserProfile({ ...defaultProfile, email: user.email || '' });
+        if (profile) {
+          setUserProfile({
+            ...profile,
+            email: user.email || profile.email || '',
+            name: user.displayName || profile.name || user.email?.split('@')[0] || 'Lumina Member'
+          });
+        }
+        else {
+          const newProfile = { 
+            ...defaultProfile, 
+            email: user.email || '', 
+            name: user.displayName || user.email?.split('@')[0] || 'Lumina Member' 
+          };
+          setUserProfile(newProfile);
+          // Immediately create the user in Firestore so they appear in Admin
+          firestoreService.updateUserProfile(user.uid, newProfile);
+        }
         
         setOrders(ordersData || []);
         setWalletItems(walletData || []);
