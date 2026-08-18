@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { getDashboardMetrics, getChartData } from '../../services/adminService';
 import { TableControls } from '../../components/admin/TableControls';
-import { Download } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -86,7 +86,7 @@ export default function Analytics() {
           className="bg-gray-900 hover:bg-black text-white font-medium py-2 px-4 rounded-lg flex items-center space-x-2 transition-colors disabled:opacity-50"
         >
           <Download className="w-4 h-4" />
-          <span>Export CSV</span>
+          <span>Download Report</span>
         </button>
       </div>
 
@@ -108,21 +108,42 @@ export default function Analytics() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Revenue</p>
-              <h3 className="text-3xl font-bold text-gray-900 font-sans tracking-tight">
-                {metrics?.totalRevenue > 0 ? `₹${metrics.totalRevenue.toLocaleString('en-IN')}` : '₹0'}
-              </h3>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Revenue</p>
+                <h3 className="text-3xl font-bold text-gray-900 font-sans tracking-tight">
+                  {metrics?.totalRevenue > 0 ? `₹${metrics.totalRevenue.toLocaleString('en-IN')}` : '₹0'}
+                </h3>
+              </div>
+              <div className="mt-4 flex items-center space-x-1 text-sm font-medium text-green-600 bg-green-50 w-fit px-2 py-0.5 rounded-md">
+                <TrendingUp className="w-4 h-4" />
+                <span>+12.5%</span>
+                <span className="text-xs text-gray-500 font-normal ml-1">vs last month</span>
+              </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Active Users</p>
-              <h3 className="text-3xl font-bold text-gray-900 font-sans tracking-tight">{metrics?.totalCustomers || 0}</h3>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Active Users</p>
+                <h3 className="text-3xl font-bold text-gray-900 font-sans tracking-tight">{metrics?.totalCustomers || 0}</h3>
+              </div>
+              <div className="mt-4 flex items-center space-x-1 text-sm font-medium text-green-600 bg-green-50 w-fit px-2 py-0.5 rounded-md">
+                <TrendingUp className="w-4 h-4" />
+                <span>+8.2%</span>
+                <span className="text-xs text-gray-500 font-normal ml-1">vs last month</span>
+              </div>
             </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Average Order Value</p>
-              <h3 className="text-3xl font-bold text-gray-900 font-sans tracking-tight">
-                ₹{averageOrderValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </h3>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Average Order Value</p>
+                <h3 className="text-3xl font-bold text-gray-900 font-sans tracking-tight">
+                  ₹{averageOrderValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                </h3>
+              </div>
+              <div className="mt-4 flex items-center space-x-1 text-sm font-medium text-red-600 bg-red-50 w-fit px-2 py-0.5 rounded-md">
+                <TrendingDown className="w-4 h-4" />
+                <span>-2.1%</span>
+                <span className="text-xs text-gray-500 font-normal ml-1">vs last month</span>
+              </div>
             </div>
           </div>
 

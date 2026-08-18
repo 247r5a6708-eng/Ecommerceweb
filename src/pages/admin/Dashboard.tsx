@@ -105,7 +105,7 @@ export default function AdminDashboard() {
       
       {/* Top Level KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Total Revenue</p>
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Total Orders</p>
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Customers</p>
@@ -149,7 +149,7 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} whileHover={{ y: -5 }} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-md">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">Products</p>
