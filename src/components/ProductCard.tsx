@@ -21,9 +21,10 @@ interface ProductCardProps {
   onToggleCompare?: (product: Product) => void;
   onProductClick?: (product: Product) => void;
   onNotifyMe?: (product: Product) => void;
+  onOpenCart?: () => void;
 }
 
-export default function ProductCard({ cartItems = [], product, onAddToCart, isWishlisted, onToggleWishlist, reviews = [], onOpenReviews, isCompared = false, onToggleCompare, onProductClick, onNotifyMe }: ProductCardProps) {
+export default function ProductCard({ cartItems = [], product, onAddToCart, isWishlisted, onToggleWishlist, reviews = [], onOpenReviews, isCompared = false, onToggleCompare, onProductClick, onNotifyMe, onOpenCart }: ProductCardProps) {
   const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
@@ -174,7 +175,7 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
                   <span>{product.repairabilityScore}/10</span>
                 </div>
               )}
-              {product.inventory !== undefined && product.inventory > 0 && product.inventory < 5 && (
+              {product.inventory !== undefined && product.inventory > 0 && product.inventory <= 5 && (
                 <div className="flex items-center space-x-1 bg-amber-500/90 text-white backdrop-blur-md text-[8px] sm:text-[10px] font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm border border-amber-400" title="Low Stock">
                   <AlertTriangle className="w-2 h-2 sm:w-3 sm:h-3" />
                   <span className="hidden sm:inline">Low Stock: {product.inventory} left</span>
@@ -237,6 +238,7 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
                   if (onNotifyMe) onNotifyMe(product);
                 } else {
                   onAddToCart(product);
+                  if (onOpenCart) onOpenCart();
                 }
               }}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl font-medium text-[10px] sm:text-sm shadow-sm transition-all ${
@@ -253,7 +255,7 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
               ) : (
                 <>
                   <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">Add</span>
+                  <span className="hidden sm:inline">Quick Buy</span>
                 </>
               )}
             </button>

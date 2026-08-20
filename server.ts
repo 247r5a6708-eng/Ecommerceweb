@@ -133,6 +133,50 @@ async function startServer() {
     }
   });
 
+  app.post("/api/ai-size-recommendation", async (req, res) => {
+    try {
+      const { productId, userProfile, orders } = req.body;
+      if (!ai) return res.json({ recommendedSize: null, reason: "AI size recommendations are currently disabled." });
+      
+      const products = await getProducts();
+      const product = products.find(p => p.id === productId);
+      
+      if (!product || !product.sizes || product.sizes.length === 0) {
+        return res.json({ recommendedSize: null, reason: "This product does not have sizes." });
+      }
+
+      const prompt = `You are a sizing expert for a luxury apparel brand. 
+Recommend the best size for the user for the product "${product.name}".
+Product details: ${product.description}
+Available sizes for this product: ${JSON.stringify(product.sizes)}
+
+User Profile Measurements: ${JSON.stringify(userProfile.bodyMeasurements || {})}
+User Purchase History (look for past sizes bought in similar categories):
+${JSON.stringify(orders.map((o: any) => o.items.map((i: any) => ({ name: i.name, category: i.category, size: i.selectedSize }))).flat())}
+
+Based on the measurements and past purchase history, deduce the best size.
+Return JSON format:
+{
+  "recommendedSize": "string (MUST be one of the available sizes)",
+  "reason": "string (1-2 sentences explaining why this size is recommended based on their measurements or past purchases)"
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+        }
+      });
+      
+      const result = JSON.parse(response.text || "{}");
+      res.json(result);
+    } catch (error) {
+      console.error("AI Size Recommendation Error:", error);
+      res.status(500).json({ error: "Failed to get size recommendation" });
+    }
+  });
+
   app.post("/api/frequently-bought", async (req, res) => {
     try {
       const { productId, cartIds = [] } = req.body;

@@ -4,47 +4,70 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { Product, Review } from '../types';
 import SafeProductImage from '../components/SafeProductImage';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { Star, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Star, ShoppingBag, ArrowLeft, Zap, X, Ruler, AlertTriangle } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { TrendingUp, Activity, UserCheck, CheckCircle2 } from 'lucide-react';
 import PriceChart from '../components/PriceChart';
+import { motion, AnimatePresence } from 'motion/react';
+import InteractiveSizeGuide from '../components/InteractiveSizeGuide';
 
 interface ProductPageProps {
   cartItems: any[];
   onAddToCart: (p: Product) => void;
   reviews: Record<string, Review[]>;
   onNotifyMe: (p: Product) => void;
+  onPlaceOrder?: (order: any) => void;
+  onAddToast?: (toast: any) => void;
 }
 
-export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyMe }: ProductPageProps) {
+export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyMe, onPlaceOrder, onAddToast }: ProductPageProps) {
   const { productId } = useParams();
   const { products, isLoading } = useCatalog();
   const navigate = useNavigate();
   const { formatPrice } = useCurrency();
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | undefined>();
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
+  const [sizeRec, setSizeRec] = useState<{recommendedSize?: string, reason?: string} | null>(null);
+  const [isSizeRecLoading, setIsSizeRecLoading] = useState(false);
+  const { userProfile, setUserProfile, orders } = useUser();
 
   useEffect(() => {
     if (!isLoading) {
       const p = products.find(p => p.id === productId);
       if (p) {
         setProduct(p);
-        if (p.sizes?.length) setSelectedSize(p.sizes[0]);
+        setSelectedSize(prev => prev || (p.sizes?.length ? p.sizes[0] : undefined));
       } else {
         setProduct(null);
       }
     }
   }, [productId, products, isLoading]);
 
-  if (isLoading) return <div className="min-h-screen pt-32 flex justify-center text-gray-500">Loading catalog...</div>;
-  if (!product) return (
-    <div className="min-h-screen pt-32 flex flex-col items-center">
-      <h2 className="text-2xl font-bold">Product not found</h2>
-      <button onClick={() => navigate('/')} className="mt-4 text-blue-500 hover:underline">Return to Home</button>
-    </div>
-  );
+  const handleOpenSizeGuide = async () => {
+    setIsSizeGuideOpen(true);
+    if (!sizeRec && product && userProfile && userProfile.bodyMeasurements) {
+      setIsSizeRecLoading(true);
+      try {
+        const res = await fetch('/api/ai-size-recommendation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: product.id, userProfile, orders })
+        });
+        const data = await res.json();
+        setSizeRec(data);
+        if (data.recommendedSize && product.sizes?.includes(data.recommendedSize)) {
+          setSelectedSize(data.recommendedSize);
+        }
+      } catch (err) {
+        console.error('Size rec failed', err);
+      } finally {
+        setIsSizeRecLoading(false);
+      }
+    }
+  };
 
-    const { userProfile } = useUser();
+
   const [frequentlyBoughtIds, setFrequentlyBoughtIds] = useState<string[]>([]);
   const [aiCompat, setAiCompat] = useState<any>(null);
   const [aiPriceInsight, setAiPriceInsight] = useState<any>(null);
@@ -79,6 +102,14 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
   
   const freqBoughtProducts = products.filter(p => frequentlyBoughtIds.includes(p.id) && p.id !== product?.id);
 
+  if (isLoading) return <div className="min-h-screen pt-32 flex justify-center text-gray-500">Loading catalog...</div>;
+  if (!product) return (
+    <div className="min-h-screen pt-32 flex flex-col items-center">
+      <h2 className="text-2xl font-bold">Product not found</h2>
+      <button onClick={() => navigate('/')} className="mt-4 text-blue-500 hover:underline">Return to Home</button>
+    </div>
+  );
+
   const productReviews = reviews[product.id] || [];
   const averageRating = productReviews.length 
     ? productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length 
@@ -110,7 +141,21 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
                 <span className="text-sm font-bold text-gray-500 ml-3">{averageRating.toFixed(1)} ({productReviews.length} reviews)</span>
               </div>
 
-              <p className="text-2xl text-gray-900 dark:text-white mb-6 font-medium">{formatPrice(product.price)}</p>
+              <div className="flex items-center mb-6">
+                <p className="text-2xl text-gray-900 dark:text-white font-medium">{formatPrice(product.price)}</p>
+                {product.inventory !== undefined && product.inventory > 0 && product.inventory <= 5 && (
+                  <div className="ml-4 flex items-center space-x-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-sm font-bold px-3 py-1 rounded-full border border-amber-500/20">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Low Stock: {product.inventory} left</span>
+                  </div>
+                )}
+                {product.inStock === false && (
+                  <div className="ml-4 flex items-center space-x-1 bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-bold px-3 py-1 rounded-full border border-red-500/20">
+                    <X className="w-4 h-4" />
+                    <span>Out of Stock</span>
+                  </div>
+                )}
+              </div>
               
               <p className="text-base text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 {product.description}
@@ -147,7 +192,13 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
 
               {product.sizes && product.sizes.length > 0 && (
                 <div className="mb-8">
-                  <label className="text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest mb-3 block">Available Configurations</label>
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-widest block">Available Configurations</label>
+                    <button onClick={handleOpenSizeGuide} className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center">
+                      <Ruler className="w-4 h-4 mr-1" />
+                      Size Guide
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map((size) => (
                       <button
@@ -166,7 +217,7 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
                 </div>
               )}
 
-              <div className="mt-auto">
+              <div className="mt-auto space-y-3">
                 <button
                   onClick={() => {
                     if (product.inStock === false) {
@@ -184,6 +235,35 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
                   <ShoppingBag className="w-5 h-5" />
                   <span>{product.inStock === false ? 'Notify Me' : 'Add to Cart'}</span>
                 </button>
+
+                {userProfile?.savedAddresses && userProfile.savedAddresses.length > 0 && product.inStock !== false && onPlaceOrder && (
+                  <button
+                    onClick={() => {
+                      const defaultAddress = userProfile.savedAddresses?.find(a => a.isDefault) || userProfile.savedAddresses![0];
+                      const order = {
+                        id: Math.random().toString(36).substr(2, 9),
+                        date: new Date().toISOString(),
+                        items: [{ ...product, selectedSize, quantity: 1 }],
+                        total: product.price,
+                        status: 'processing',
+                        address: defaultAddress,
+                        paymentMethod: 'credit-card',
+                      };
+                      onPlaceOrder(order);
+                      if (onAddToast) {
+                        onAddToast({
+                          title: 'Order Placed!',
+                          message: `Successfully purchased ${product.name} with Express Checkout.`,
+                          type: 'success'
+                        });
+                      }
+                    }}
+                    className="w-full flex items-center justify-center space-x-2 py-4 rounded-xl font-bold text-base transition-all bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+                  >
+                    <Zap className="w-5 h-5 text-yellow-400" />
+                    <span>Express Checkout</span>
+                  </button>
+                )}
               </div>
             </div>
           
@@ -203,6 +283,15 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
           )}
         </div>
       </div>
+
+      <InteractiveSizeGuide
+        isOpen={isSizeGuideOpen}
+        onClose={() => setIsSizeGuideOpen(false)}
+        product={product}
+        userProfile={userProfile}
+        onUpdateProfile={setUserProfile}
+        onSelectSize={(size) => setSelectedSize(size)}
+      />
     </div>
   );
 }

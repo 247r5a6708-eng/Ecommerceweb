@@ -82,8 +82,49 @@ export default function App() {
     handleAddToCart,
     handleUpdateQuantity,
     handleRemoveItem,
-    handleClearCart
+    handleClearCart,
+    setCartItems
   } = useCart(firebaseUser);
+
+  const handleAddToCartWithToast = (product: Product & { selectedSize?: string }) => {
+    const wasNew = handleAddToCart(product);
+    addToast({
+      title: 'Added to Cart',
+      message: `${product.name} was added to your cart.`,
+      type: 'success',
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          if (wasNew) {
+            handleRemoveItem(product.id, product.selectedSize);
+          } else {
+            // It existed, so adding it just incremented by 1. Revert the +1.
+            // But we need the current quantity to decrement accurately without race conditions,
+            // or we could just use a callback in setCartItems. To keep it simple, we decrement the latest known quantity.
+            // Since setCartItems has a callback form, we should probably add a decrement function to useCart if we want true safety.
+            // But for now, we'll just dispatch a quantity update by calling handleUpdateQuantity with the logic inside useCart.
+            // To do this right, let's just dispatch handleUpdateQuantity and useCart handles the array update.
+            // Actually handleUpdateQuantity takes a specific number. Let's just remove 1 from the cart.
+            setCartItems(prev => {
+              return prev.map(item => {
+                 if (item.id === product.id && item.selectedSize === product.selectedSize) {
+                    const newQ = item.quantity - 1;
+                    return { ...item, quantity: newQ };
+                 }
+                 return item;
+              }).filter(item => item.quantity > 0);
+            });
+          }
+          
+          addToast({
+            title: 'Action Reverted',
+            message: `${product.name} was removed from your cart.`,
+            type: 'info'
+          });
+        }
+      }
+    });
+  };
 
   
   
@@ -121,6 +162,8 @@ export default function App() {
   
   const [compareProducts, setCompareProducts] = useState<Product[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [stockAlertsSent, setStockAlertsSent] = useState<Set<string>>(new Set());
+  const [isInitialStockLoad, setIsInitialStockLoad] = useState(true);
 
   const { recentlyViewed, addRecentlyViewed, clearRecentlyViewed } = useRecentlyViewed();
 
@@ -177,6 +220,48 @@ export default function App() {
       setAlertsSent(newAlertsSent);
     }
   }, [products, priceAlerts, userProfile.email]);
+
+  useEffect(() => {
+    if (!products.length) return;
+    
+    if (isInitialStockLoad) {
+      const initialLowStock = new Set<string>();
+      products.forEach(p => {
+        if (p.inventory !== undefined && p.inventory > 0 && p.inventory <= 5) {
+          initialLowStock.add(p.id);
+        }
+      });
+      setStockAlertsSent(initialLowStock);
+      setIsInitialStockLoad(false);
+      return;
+    }
+
+    const newStockAlerts = new Set(stockAlertsSent);
+    let didSend = false;
+
+    products.forEach(p => {
+      if (p.inventory !== undefined && p.inventory > 0 && p.inventory <= 5) {
+        if (!newStockAlerts.has(p.id)) {
+          addToast({
+            title: 'Low Stock Alert',
+            message: `Hurry! ${p.name} is running low (only ${p.inventory} left)`,
+            type: 'info'
+          });
+          newStockAlerts.add(p.id);
+          didSend = true;
+        }
+      } else if (p.inventory === undefined || p.inventory > 5) {
+         if (newStockAlerts.has(p.id)) {
+             newStockAlerts.delete(p.id);
+             didSend = true;
+         }
+      }
+    });
+
+    if (didSend) {
+      setStockAlertsSent(newStockAlerts);
+    }
+  }, [products]);
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -442,20 +527,12 @@ export default function App() {
 
   const availableTypes: string[] = ['All', ...Array.from(new Set(products.filter(p => activeCategory === 'All' || p.category === activeCategory).map(p => p.type))) as string[]];
 
-  
-  if (isAdminRoute) {
-    return (
-      <div className="font-sans">
-        <Routes>
-          <Route path="/admin/*" element={<AdminPortal />} />
-        </Routes>
-        <ToastContainer toasts={toasts} onRemove={removeToast} />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0A0A0A] font-sans text-[#111] dark:text-[#FAFAFA] selection:bg-gray-300 dark:selection:bg-white/20 transition-colors duration-500 relative">
+    <div className="font-sans">
+      <Routes>
+        <Route path="/admin/*" element={<AdminPortal />} />
+        <Route path="*" element={
+          <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0A0A0A] font-sans text-[#111] dark:text-[#FAFAFA] selection:bg-gray-300 dark:selection:bg-white/20 transition-colors duration-500 relative">
       
       {showConfetti && (
         <div className="fixed inset-0 z-[100] pointer-events-none">
@@ -516,7 +593,8 @@ export default function App() {
             <ProductGrid cartItems={cartItems} 
               aiMatchedIds={aiMatchedIds}
               isAiSearching={isAiSearching}
-              onAddToCart={handleAddToCart} 
+              onAddToCart={handleAddToCartWithToast} 
+              onOpenCart={() => setIsCartOpen(true)}
               searchQuery={searchQuery} 
               activeCategory={activeCategory}
               activeType={activeType} 
@@ -540,76 +618,9 @@ export default function App() {
         } />
         <Route path="/returns" element={<ReturnsPage />} />
         
-        <Route path="/product/:productId" element={<ProductPage cartItems={cartItems} onAddToCart={handleAddToCart} reviews={reviews} onNotifyMe={setNotifyProduct} />} />
+        <Route path="/product/:productId" element={<ProductPage cartItems={cartItems} onAddToCart={handleAddToCartWithToast} reviews={reviews} onNotifyMe={setNotifyProduct} onPlaceOrder={handlePlaceOrder} onAddToast={addToast} />} />
       </Routes>
 
-
-      <PromotionalBanner />
-      <Navbar 
-        cartItemCount={cartItemCount} 
-        onOpenCart={() => setIsCartOpen(true)} 
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        wishlistItemCount={wishlistItems.length}
-        hasWishlistAlerts={hasWishlistAlerts}
-        onOpenProfile={() => firebaseUser ? setIsProfileOpen(true) : setIsAuthOpen(true)}
-        onOpenWishlist={() => setIsWishlistOpen(true)}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-        activeCategory={activeCategory}
-        onCategoryChange={(cat) => {
-          setActiveCategory(cat);
-          setActiveType('All');
-          setSearchQuery('');
-          setAiMatchedIds(null);
-        }}
-        onAddToast={addToast}
-      />
-      
-      
-      
-      <Hero onSearch={setSearchQuery} />
-      
-      <div className="relative z-20 bg-[#FAFAFA] dark:bg-[#0A0A0A]">
-      <CategoryFilter 
-        activeType={activeType}
-        availableTypes={availableTypes} 
-        onTypeChange={(type) => {
-          if (type === 'All') {
-            setActiveCategory('All');
-          }
-          setActiveType(type);
-          setSearchQuery('');
-          setAiMatchedIds(null);
-        }} 
-        sortOption={sortOption}
-        onSortChange={setSortOption}
-      />
-      
-      <ProductGrid cartItems={cartItems} 
-        aiMatchedIds={aiMatchedIds}
-        isAiSearching={isAiSearching}
-        onAddToCart={handleAddToCart} 
-        searchQuery={searchQuery} 
-        activeCategory={activeCategory}
-        activeType={activeType} 
-        sortOption={sortOption}
-        wishlistItems={wishlistItems}
-        onToggleWishlist={handleToggleWishlist}
-        isLoading={isProductsLoading}
-        reviews={reviews}
-        onOpenReviews={setReviewModalProduct}
-        compareProducts={compareProducts}
-        onToggleCompare={handleToggleCompare}
-        onProductClick={handleProductClick}
-        onNotifyMe={setNotifyProduct}
-        onClearSearch={() => {
-          setSearchQuery('');
-          setAiMatchedIds(null);
-        }}
-      />
-      </div>
-      
       <Cart 
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -622,8 +633,6 @@ export default function App() {
         onAddToast={addToast}
       />
       
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-
       <SharedWishlistModal
         isOpen={!!sharedWishlistUserId}
         onClose={() => {
@@ -637,7 +646,7 @@ export default function App() {
         productIds={sharedWishlistItems}
         products={products}
         isLoading={isSharedWishlistLoading}
-        onAddToCart={handleAddToCart}
+        onAddToCart={handleAddToCartWithToast}
       />
 
       
@@ -649,6 +658,7 @@ export default function App() {
         userProfile={userProfile}
         onUpdateProfile={handleUpdateProfile}
         walletItems={walletItems}
+        onAddToast={addToast}
         onLogout={() => {
           signOut(auth);
           setFirebaseUser(null);
@@ -667,7 +677,7 @@ export default function App() {
         items={wishlistItems.map(id => products.find(p => p.id === id)!).filter(Boolean)}
         onRemoveItem={handleToggleWishlist}
         onClearWishlist={handleClearWishlist}
-        onAddToCart={handleAddToCart}
+        onAddToCart={handleAddToCartWithToast}
       />
 
       <ReviewModal
@@ -698,7 +708,7 @@ export default function App() {
         onClear={() => {
           clearRecentlyViewed();
         }}
-        onAddToCart={handleAddToCart}
+        onAddToCart={handleAddToCartWithToast}
         wishlistItems={wishlistItems}
         onToggleWishlist={handleToggleWishlist}
         onOpenReviews={setReviewModalProduct}
@@ -775,7 +785,7 @@ export default function App() {
         onClose={() => setIsCompareModalOpen(false)}
         products={compareProducts}
         onRemoveProduct={(id) => setCompareProducts(prev => prev.filter(p => p.id !== id))}
-        onAddToCart={handleAddToCart}
+        onAddToCart={handleAddToCartWithToast}
         reviews={reviews}
       />
       
@@ -810,6 +820,10 @@ export default function App() {
           </button>
         </div>
       )}
+          </div>
+        } />
+      </Routes>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }

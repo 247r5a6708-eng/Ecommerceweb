@@ -381,7 +381,17 @@ export default function Navbar({
               className="hidden sm:flex p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               aria-label="Toggle Dark Mode"
             >
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={isDarkMode ? 'dark' : 'light'}
+                  initial={{ opacity: 0, rotate: -90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: 90 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </motion.div>
+              </AnimatePresence>
             </button>
 
             <button 
@@ -583,7 +593,17 @@ export default function Navbar({
                   onClick={onToggleDarkMode}
                   className="flex items-center justify-center space-x-2 py-3 bg-gray-50 dark:bg-white/5 rounded-xl text-gray-700 dark:text-gray-300 font-medium"
                 >
-                  {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={isDarkMode ? 'dark' : 'light'}
+                      initial={{ opacity: 0, rotate: -90 }}
+                      animate={{ opacity: 1, rotate: 0 }}
+                      exit={{ opacity: 0, rotate: 90 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    </motion.div>
+                  </AnimatePresence>
                   <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
                 </button>
               </div>

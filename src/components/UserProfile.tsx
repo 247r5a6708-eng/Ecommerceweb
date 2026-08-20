@@ -3,8 +3,8 @@ import { Fragment, useState, useEffect, useMemo } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { X, Clock, Package, CheckCircle2, User, Mail, MapPin, Edit2, LogOut, XCircle, Phone, Image as ImageIcon, Wallet, Shield, FileText, Wrench } from 'lucide-react';
-import { Order, UserProfileData, WalletProduct } from '../types';
+import { X, Clock, Package, CheckCircle2, User, Mail, MapPin, Edit2, LogOut, XCircle, Phone, Image as ImageIcon, Wallet, Shield, FileText, Wrench, Gift, Copy, Check, Home, Plus, Trash2, Ruler } from 'lucide-react';
+import { Order, UserProfileData, WalletProduct, Address } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Download } from 'lucide-react';
@@ -21,19 +21,81 @@ interface UserProfileProps {
   onUpdateProfile: (profile: UserProfileData) => void;
   onLogout: () => void;
   walletItems?: WalletProduct[];
+  onAddToast?: (toast: { title: string, message: string, type: 'success' | 'error' | 'info' }) => void;
 }
 
-export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, userProfile, onUpdateProfile, onLogout, walletItems = [] }: UserProfileProps) {
+export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, userProfile, onUpdateProfile, onLogout, walletItems = [], onAddToast }: UserProfileProps) {
   const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<UserProfileData>(userProfile);
-  const [activeTab, setActiveTab] = useState<'orders' | 'wallet'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'wallet' | 'referral' | 'addresses' | 'measurements'>('orders');
 
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
   const [cancelOrderData, setCancelOrderData] = useState<{ id: string, reason: string } | null>(null);
   const [previewPdfData, setPreviewPdfData] = useState<{ url: string, name: string } | null>(null);
+  const [hasCopied, setHasCopied] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState<Address | null>(null);
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+
+  useEffect(() => {
+    setUser(userProfile);
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+      if (tab === 'measurements') {
+        setActiveTab('measurements');
+      }
+    }
+  }, [isOpen]);
+
+  const handleSaveAddress = (address: Address) => {
+    const updatedAddresses = [...(user.savedAddresses || [])];
+    if (address.id) {
+      // Editing
+      const index = updatedAddresses.findIndex(a => a.id === address.id);
+      if (index !== -1) {
+        if (address.isDefault) {
+          updatedAddresses.forEach(a => a.isDefault = false);
+        }
+        updatedAddresses[index] = address;
+      }
+    } else {
+      // Adding new
+      const newAddress = { ...address, id: Math.random().toString(36).substr(2, 9) };
+      if (newAddress.isDefault || updatedAddresses.length === 0) {
+        updatedAddresses.forEach(a => a.isDefault = false);
+        newAddress.isDefault = true;
+      }
+      updatedAddresses.push(newAddress);
+    }
+    
+    const newProfile = { ...user, savedAddresses: updatedAddresses };
+    setUser(newProfile);
+    onUpdateProfile(newProfile);
+    setIsAddingAddress(false);
+    setIsEditingAddress(null);
+    if (onAddToast) {
+      onAddToast({ title: 'Success', message: 'Address saved successfully', type: 'success' });
+    }
+  };
+
+  const handleDeleteAddress = (id: string) => {
+    const updatedAddresses = (user.savedAddresses || []).filter(a => a.id !== id);
+    if (updatedAddresses.length > 0 && !updatedAddresses.some(a => a.isDefault)) {
+      updatedAddresses[0].isDefault = true;
+    }
+    const newProfile = { ...user, savedAddresses: updatedAddresses };
+    setUser(newProfile);
+    onUpdateProfile(newProfile);
+    if (onAddToast) {
+      onAddToast({ title: 'Success', message: 'Address removed', type: 'success' });
+    }
+  };
 
 
   const previewInvoice = (order: Order) => {
@@ -49,6 +111,18 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
       const doc = generateInvoicePDF(order, user);
       doc.save(`invoice_${order.id}.pdf`);
     });
+  };
+
+  const handleEmailInvoice = (order: Order) => {
+    if (onAddToast) {
+      onAddToast({
+        title: 'Invoice Sent',
+        message: `The invoice for order #${order.id} has been sent to ${userProfile.email}.`,
+        type: 'success'
+      });
+    } else {
+      alert(`The invoice for order #${order.id} has been sent to ${userProfile.email}.`);
+    }
   };
 
 
@@ -92,10 +166,6 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
     
     return data;
   }, [orders]);
-
-  useEffect(() => {
-    setUser(userProfile);
-  }, [userProfile]);
 
   return (
     <AnimatePresence>
@@ -302,7 +372,7 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
               </div>
 
               {/* Tabs */}
-              <div className="flex border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#121216] px-6">
+              <div className="flex overflow-x-auto whitespace-nowrap border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#121216] px-6 scrollbar-hide">
                 <button
                   onClick={() => setActiveTab('orders')}
                   className={`py-3 text-sm font-medium border-b-2 mr-6 transition-colors ${activeTab === 'orders' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
@@ -311,9 +381,27 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                 </button>
                 <button
                   onClick={() => setActiveTab('wallet')}
-                  className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'wallet' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                  className={`py-3 text-sm font-medium border-b-2 mr-6 transition-colors ${activeTab === 'wallet' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                 >
                   <span className="flex items-center"><Wallet className="w-4 h-4 mr-2" /> Digital Wallet</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('referral')}
+                  className={`py-3 text-sm font-medium border-b-2 mr-6 transition-colors ${activeTab === 'referral' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                  <span className="flex items-center"><Gift className="w-4 h-4 mr-2" /> Refer a Friend</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('addresses')}
+                  className={`py-3 text-sm font-medium border-b-2 mr-6 transition-colors ${activeTab === 'addresses' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                  <span className="flex items-center"><Home className="w-4 h-4 mr-2" /> Addresses</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('measurements')}
+                  className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'measurements' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                  <span className="flex items-center"><Ruler className="w-4 h-4 mr-2" /> Measurements</span>
                 </button>
               </div>
 
@@ -396,6 +484,13 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                                   <FileText className="w-3.5 h-3.5 mr-1" />
                                   Invoice
                                 </button>
+                                <button
+                                  onClick={() => handleEmailInvoice(order)}
+                                  className="px-3 py-1.5 flex items-center bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full text-xs font-bold hover:bg-green-100 dark:hover:bg-green-900/40 hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                                >
+                                  <Mail className="w-3.5 h-3.5 mr-1" />
+                                  Email
+                                </button>
                               </div>
                               <div className="text-right">
                                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
@@ -461,7 +556,7 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                       </div>
                     )}
                   </>
-                ) : (
+                ) : activeTab === 'wallet' ? (
                   <div className="space-y-4">
                     {walletItems.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-10 text-center space-y-4 bg-white dark:bg-[#121216] rounded-2xl border border-gray-100 dark:border-white/5">
@@ -518,11 +613,350 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                       ))
                     )}
                   </div>
-                )}
+                ) : activeTab === 'referral' ? (
+                  <div className="space-y-6">
+                    <div className="bg-white dark:bg-[#121216] p-8 rounded-2xl border border-gray-100 dark:border-white/5 text-center shadow-sm">
+                      <div className="w-16 h-16 bg-pink-50 dark:bg-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Gift className="w-8 h-8 text-pink-500 dark:text-pink-400" />
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Invite Friends, Earn Rewards</h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm max-w-sm mx-auto mb-8">
+                        Share your unique referral link with friends. When they make their first purchase, you both get $20 in store credit!
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-3 max-w-lg mx-auto">
+                        <div className="flex-1 w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-600 dark:text-gray-300 font-mono text-left truncate flex items-center h-12">
+                          https://store.example.com/ref/{userProfile.id?.slice(0,8) || 'user123'}
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(`https://store.example.com/ref/${userProfile.id?.slice(0,8) || 'user123'}`);
+                            setHasCopied(true);
+                            setTimeout(() => setHasCopied(false), 2000);
+                            if (onAddToast) {
+                              onAddToast({
+                                title: 'Link Copied',
+                                message: 'Referral link copied to clipboard!',
+                                type: 'success'
+                              });
+                            }
+                          }}
+                          className={`flex-shrink-0 w-full sm:w-auto px-6 rounded-xl font-medium transition-all flex items-center justify-center h-12 shadow-sm ${hasCopied ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'}`}
+                        >
+                          {hasCopied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                          {hasCopied ? 'Copied!' : 'Copy Link'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : activeTab === 'addresses' ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Saved Addresses</h3>
+                      <button 
+                        onClick={() => setIsAddingAddress(true)}
+                        className="flex items-center space-x-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add New Address</span>
+                      </button>
+                    </div>
+                    {(!user.savedAddresses || user.savedAddresses.length === 0) ? (
+                      <div className="bg-white dark:bg-[#121216] border border-gray-100 dark:border-white/5 rounded-xl p-8 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
+                        <div className="w-16 h-16 bg-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center">
+                          <MapPin className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 dark:text-white font-medium">No saved addresses</p>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Add an address to checkout faster.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {user.savedAddresses.map((addr) => (
+                          <div key={addr.id} className="relative bg-white dark:bg-[#121216] border border-gray-200 dark:border-white/10 p-5 rounded-xl flex flex-col hover:border-black dark:hover:border-white transition-colors group">
+                            {addr.isDefault && (
+                              <span className="absolute top-4 right-4 bg-gray-100 dark:bg-white/10 text-gray-800 dark:text-gray-200 text-xs px-2 py-1 rounded-md font-medium">
+                                Default
+                              </span>
+                            )}
+                            <h4 className="font-bold text-gray-900 dark:text-white flex items-center space-x-2">
+                              {addr.fullName}
+                            </h4>
+                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1">
+                              <p>{addr.addressLine1}</p>
+                              {addr.addressLine2 && <p>{addr.addressLine2}</p>}
+                              <p>{addr.city}, {addr.state} {addr.zipCode}</p>
+                              <p>{addr.country}</p>
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => setIsEditingAddress(addr)}
+                                className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                              >
+                                <Edit2 className="w-3 h-3 mr-1" /> Edit
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  if (addr.id) handleDeleteAddress(addr.id);
+                                }}
+                                className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 flex items-center"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" /> Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : activeTab === 'measurements' ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Body Measurements</h3>
+                    </div>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      const bodyMeasurements = {
+                        height: formData.get('height') as string,
+                        weight: formData.get('weight') as string,
+                        chest: formData.get('chest') as string,
+                        waist: formData.get('waist') as string,
+                        hips: formData.get('hips') as string,
+                      };
+                      const newProfile = { ...user, bodyMeasurements };
+                      setUser(newProfile);
+                      onUpdateProfile(newProfile);
+                      if (onAddToast) {
+                        onAddToast({ title: 'Success', message: 'Measurements saved', type: 'success' });
+                      }
+                    }} className="bg-white dark:bg-[#121216] border border-gray-100 dark:border-white/5 p-6 rounded-xl space-y-4">
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Height (e.g. 5'10" or 178cm)</label>
+                          <input 
+                            type="text" 
+                            name="height"
+                            defaultValue={user.bodyMeasurements?.height}
+                            className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Weight (e.g. 160lbs or 72kg)</label>
+                          <input 
+                            type="text" 
+                            name="weight"
+                            defaultValue={user.bodyMeasurements?.weight}
+                            className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Chest (e.g. 38")</label>
+                          <input 
+                            type="text" 
+                            name="chest"
+                            defaultValue={user.bodyMeasurements?.chest}
+                            className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Waist (e.g. 32")</label>
+                          <input 
+                            type="text" 
+                            name="waist"
+                            defaultValue={user.bodyMeasurements?.waist}
+                            className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hips (e.g. 40")</label>
+                          <input 
+                            type="text" 
+                            name="hips"
+                            defaultValue={user.bodyMeasurements?.hips}
+                            className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end pt-4">
+                        <button type="submit" className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
+                          Save Measurements
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : null}
               </div>
             </div>
           </motion.div>
         
+          {/* Address Modal */}
+          {(isAddingAddress || isEditingAddress) && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white dark:bg-[#121216] rounded-2xl w-full max-w-lg shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden my-8"
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {isEditingAddress ? 'Edit Address' : 'Add New Address'}
+                    </h3>
+                    <button 
+                      onClick={() => { setIsAddingAddress(false); setIsEditingAddress(null); }}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const addressData: Address = {
+                      id: isEditingAddress?.id,
+                      isDefault: isEditingAddress?.isDefault || formData.get('isDefault') === 'on',
+                      fullName: formData.get('fullName') as string,
+                      phone: formData.get('phone') as string,
+                      addressLine1: formData.get('addressLine1') as string,
+                      addressLine2: formData.get('addressLine2') as string,
+                      city: formData.get('city') as string,
+                      state: formData.get('state') as string,
+                      zipCode: formData.get('zipCode') as string,
+                      country: formData.get('country') as string,
+                    };
+                    handleSaveAddress(addressData);
+                  }} className="space-y-4">
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                      <input 
+                        type="text" 
+                        name="fullName"
+                        required
+                        defaultValue={isEditingAddress?.fullName}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        name="phone"
+                        required
+                        defaultValue={isEditingAddress?.phone}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 1</label>
+                      <input 
+                        type="text" 
+                        name="addressLine1"
+                        required
+                        defaultValue={isEditingAddress?.addressLine1}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address Line 2 (Optional)</label>
+                      <input 
+                        type="text" 
+                        name="addressLine2"
+                        defaultValue={isEditingAddress?.addressLine2}
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">City</label>
+                        <input 
+                          type="text" 
+                          name="city"
+                          required
+                          defaultValue={isEditingAddress?.city}
+                          className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">State/Province</label>
+                        <input 
+                          type="text" 
+                          name="state"
+                          required
+                          defaultValue={isEditingAddress?.state}
+                          className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ZIP/Postal Code</label>
+                        <input 
+                          type="text" 
+                          name="zipCode"
+                          required
+                          defaultValue={isEditingAddress?.zipCode}
+                          className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
+                        <input 
+                          type="text" 
+                          name="country"
+                          required
+                          defaultValue={isEditingAddress?.country || 'United States'}
+                          className="w-full px-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {!isEditingAddress?.isDefault && (
+                      <div className="flex items-center space-x-2 pt-2">
+                        <input 
+                          type="checkbox" 
+                          name="isDefault" 
+                          id="isDefault"
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" 
+                        />
+                        <label htmlFor="isDefault" className="text-sm text-gray-700 dark:text-gray-300">
+                          Set as default address
+                        </label>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => { setIsAddingAddress(false); setIsEditingAddress(null); }}
+                        className="px-6 py-2 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-xl font-medium hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-sm"
+                      >
+                        Save Address
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
           {/* Cancel Order Modal */}
           {cancelOrderData && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">

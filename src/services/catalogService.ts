@@ -1,3 +1,4 @@
+import { logAuditAction } from "./adminService";
 import { collection, getDocs, doc, writeBatch, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase.ts';
 import type { 
@@ -325,4 +326,92 @@ export async function deleteProduct(product: Product) {
   // Actually we should just fetch the skus related to variantId and delete them, but for brevity in this MVP we might leave orphans or delete if we know the SKU ID.
   
   await batch.commit();
+  await logAuditAction('PRODUCT_DELETE', product.id, `Deleted product: ${product.name}`);
+}
+
+export async function updateProductVariant(variantId: string, data: Partial<ProductVariant>) {
+  try {
+    const { doc, updateDoc } = await import('firebase/firestore');
+    const { db } = await import('../lib/firebase');
+    const ref = doc(db, 'productVariants', variantId);
+    await updateDoc(ref, data);
+    await logAuditAction('PRODUCT_UPDATE', variantId, `Updated product variant details`);
+    return true;
+  } catch (err) {
+    console.error("Error updating variant", err);
+    return false;
+  }
+}
+
+export async function addProduct(productData: any) {
+  try {
+    const { doc, writeBatch } = await import('firebase/firestore');
+    const { db } = await import('../lib/firebase');
+    const batch = writeBatch(db);
+
+    const familyId = `fam-${crypto.randomUUID().split('-')[0]}`;
+    const modelId = `mod-${crypto.randomUUID().split('-')[0]}`;
+    const variantId = `var-${crypto.randomUUID().split('-')[0]}`;
+    const skuId = `sku-${crypto.randomUUID().split('-')[0]}`;
+
+    const categoryId = 'cat-' + (productData.category || 'Uncategorized').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const brandId = 'brd-lumina'; // default brand
+
+    batch.set(doc(db, 'brands', brandId), { id: brandId, name: 'Lumina' }, { merge: true });
+    batch.set(doc(db, 'categories', categoryId), { id: categoryId, name: productData.category || 'Uncategorized' }, { merge: true });
+
+    batch.set(doc(db, 'productFamilies', familyId), {
+      id: familyId,
+      name: productData.name,
+      description: productData.description,
+      brandId,
+      categoryId
+    });
+
+    batch.set(doc(db, 'productModels', modelId), {
+      id: modelId,
+      productId: familyId,
+      name: productData.name
+    });
+
+    batch.set(doc(db, 'productVariants', variantId), {
+      id: variantId,
+      productId: modelId,
+      name: productData.name,
+      price: productData.price || 0,
+      inventoryCount: productData.inventoryCount || 0,
+      sizeGuideVideoUrl: productData.sizeGuideVideoUrl || '',
+      isPinnedInSuggestions: productData.isPinnedInSuggestions || false,
+      attributes: {}
+    });
+
+    batch.set(doc(db, 'skus', skuId), {
+      id: skuId,
+      variantId,
+      code: productData.sku || `SKU-${Math.floor(Math.random() * 100000)}`
+    });
+
+    if (productData.image) {
+       const imgId = `img-${crypto.randomUUID().split('-')[0]}`;
+       batch.set(doc(db, 'productImages', imgId), {
+         id: imgId,
+         variantId,
+         url: productData.image,
+         verified: true,
+         verificationStatus: 'verified',
+         createdAt: new Date().toISOString()
+       });
+    }
+
+    await batch.commit();
+    
+    await logAuditAction('PRODUCT_ADD', variantId, `Added new product: ${productData.name}`);
+    
+    // Invalidate cache
+    catalogCache = null;
+    return true;
+  } catch (error) {
+    console.error("Error adding product:", error);
+    return false;
+  }
 }

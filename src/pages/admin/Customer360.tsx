@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getAllCustomers, getCustomerDetails } from '../../services/adminService';
+import { getAllCustomers, getCustomerDetails, updateUserRole } from '../../services/adminService';
 import { TableControls, filterByDateRange } from '../../components/admin/TableControls';
-import { X, User, ShoppingCart, TrendingUp, Mail, Phone, MapPin } from 'lucide-react';
+import { X, User, ShoppingCart, TrendingUp, Mail, Phone, MapPin, Shield } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function Customer360() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -14,6 +15,8 @@ export default function Customer360() {
   const [dateFilter, setDateFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -38,9 +41,25 @@ export default function Customer360() {
     // Fetch deep details
     const details = await getCustomerDetails(customerId);
     if (details) {
-      setSelectedCustomer(details);
+      setSelectedCustomer({ ...details, _loading: false });
+    } else {
+      setSelectedCustomer({ ...basicInfo, _loading: false, orders: [] });
     }
     setDetailsLoading(false);
+  };
+
+  const handleRoleChange = async (newRole: string) => {
+    if (!selectedCustomer?.id) return;
+    setIsUpdatingRole(true);
+    const success = await updateUserRole(selectedCustomer.id, newRole);
+    if (success) {
+      setSelectedCustomer((prev: any) => ({ ...prev, role: newRole }));
+      setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? { ...c, role: newRole } : c));
+      toast.success('Role updated');
+    } else {
+      toast.error('Failed to update role');
+    }
+    setIsUpdatingRole(false);
   };
 
   const processedCustomers = filterByDateRange(
@@ -194,6 +213,21 @@ export default function Customer360() {
                               ? new Date(selectedCustomer.createdAt.seconds * 1000).toLocaleDateString() 
                               : (selectedCustomer.createdAt || 'N/A')}
                           </div>
+                        </div>
+                        <div className="col-span-2 pt-2 border-t border-gray-200 mt-2">
+                           <div className="text-gray-500 mb-2 text-xs uppercase font-bold tracking-wider flex items-center"><Shield className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> Role-Based Access</div>
+                           <select 
+                             value={selectedCustomer.role || 'customer'} 
+                             onChange={(e) => handleRoleChange(e.target.value)}
+                             disabled={isUpdatingRole}
+                             className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-gray-900"
+                           >
+                             <option value="customer">Customer</option>
+                             <option value="support">Support Agent</option>
+                             <option value="manager">Store Manager</option>
+                             <option value="admin">System Administrator</option>
+                           </select>
+                           <p className="text-[10px] text-gray-400 mt-1">Changes permissions in the application instantly.</p>
                         </div>
                       </div>
                     </div>

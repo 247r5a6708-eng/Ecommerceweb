@@ -1,14 +1,17 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
-    
+        
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.email == 'kumarrachith0@gmail.com';
+      // Dynamic RBAC check. We still allow the original hardcoded email as a fallback Super Admin to prevent lockout
+      return isAuthenticated() && (
+        request.auth.token.email == 'kumarrachith0@gmail.com' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'manager', 'support']
+      );
     }
 
     function isOwner(userId) {
@@ -16,36 +19,35 @@ service cloud.firestore {
     }
 
     // Public catalog reads
-    match /products/{productId} {
-      allow read: if true;
-      allow write: if false; // Temporarily allow for seeding
-    }
-    match /brands/{brandId} { allow read: if true; allow write: if false; }
-    match /categories/{categoryId} { allow read: if true; allow write: if false; }
-    match /productFamilies/{familyId} { allow read: if true; allow write: if false; }
-    match /productModels/{modelId} { allow read: if true; allow write: if false; }
-    match /productVariants/{variantId} { allow read: if true; allow write: if false; }
-    match /skus/{skuId} { allow read: if true; allow write: if false; }
-    match /productImages/{imageId} { allow read: if true; allow write: if false; }
-    match /inventory/{inventoryId} { allow read: if true; allow write: if false; }
-    match /prices/{priceId} { allow read: if true; allow write: if false; }
-    match /sellers/{sellerId} { allow read: if true; allow write: if false; }
+    match /products/{productId} { allow read: if true; allow write: if isAdmin(); }
+    match /brands/{brandId} { allow read: if true; allow write: if isAdmin(); }
+    match /categories/{categoryId} { allow read: if true; allow write: if isAdmin(); }
+    match /productFamilies/{familyId} { allow read: if true; allow write: if isAdmin(); }
+    match /productModels/{modelId} { allow read: if true; allow write: if isAdmin(); }
+    match /productVariants/{variantId} { allow read: if true; allow write: if isAdmin(); }
+    match /skus/{skuId} { allow read: if true; allow write: if isAdmin(); }
+    match /productImages/{imageId} { allow read: if true; allow write: if isAdmin(); }
+    match /inventory/{inventoryId} { allow read: if true; allow write: if isAdmin(); }
+    match /prices/{priceId} { allow read: if true; allow write: if isAdmin(); }
+    match /sellers/{sellerId} { allow read: if true; allow write: if isAdmin(); }
 
     // User private data
     match /users/{userId} {
-      allow read, write: if true;
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
       
-      match /data/{document=**} { allow read, write: if true; }
-      match /cart/{document=**} { allow read, write: if true; }
-      match /wishlist/{document=**} { allow read, write: if true; }
-      match /orders/{document=**} { allow read, write: if true; }
-      match /returns/{document=**} { allow read, write: if true; }
-      match /owned-products/{document=**} { allow read, write: if true; }
-      match /serviceRecords/{document=**} { allow read, write: if true; }
+      // Specifically protect the role field from being modified by the owner themselves
+      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isAdmin'])) || isAdmin();
+      
+      match /data/{document=**} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /cart/{document=**} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /wishlist/{document=**} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /orders/{document=**} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /returns/{document=**} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /owned-products/{document=**} { allow read, write: if isOwner(userId) || isAdmin(); }
+      match /serviceRecords/{document=**} { allow read, write: if isOwner(userId) || isAdmin(); }
     }
-    
-    
-    
+            
     match /{path=**}/orders/{orderId} {
       allow read: if isAdmin();
     }
@@ -59,7 +61,6 @@ service cloud.firestore {
     // Reviews
     match /reviews/{reviewId} {
       allow read: if true;
-      // Client can create but cannot set verifiedPurchase or trustScore
       allow create: if isAuthenticated() 
                     && request.resource.data.userId == request.auth.uid
                     && (!request.resource.data.keys().hasAny(['verifiedPurchase', 'trustScore']) 

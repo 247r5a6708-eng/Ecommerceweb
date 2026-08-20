@@ -30,6 +30,19 @@ export default function ToastContainer({ toasts, onRemove }: ToastContainerProps
                 <div className="ml-3 w-0 flex-1 pt-0.5">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">{toast.title}</p>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{toast.message}</p>
+                  {toast.action && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => {
+                          toast.action!.onClick();
+                          onRemove(toast.id);
+                        }}
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                      >
+                        {toast.action.label}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="ml-4 flex flex-shrink-0">
                   <button

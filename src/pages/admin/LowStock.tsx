@@ -25,8 +25,8 @@ export default function LowStock() {
     try {
       const allProducts = await getProducts(true); // force refresh
       const lowStockProducts = allProducts
-        .filter(p => p.inventory !== undefined && p.inventory < STOCK_THRESHOLD)
-        .sort((a, b) => (a.inventory || 0) - (b.inventory || 0));
+        .filter(p => p.inventoryCount !== undefined && p.inventoryCount < (p.lowStockThreshold || 15))
+        .sort((a, b) => (a.inventoryCount || 0) - (b.inventoryCount || 0));
       setProducts(lowStockProducts);
     } catch (err) {
       console.error(err);
@@ -68,7 +68,7 @@ export default function LowStock() {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Low Stock Alerts</h2>
-          <p className="text-gray-500 text-sm mt-1">Products with inventory below {STOCK_THRESHOLD} units.</p>
+          <p className="text-gray-500 text-sm mt-1">Products with inventory below their configured alert thresholds.</p>
         </div>
       </div>
 
@@ -95,7 +95,7 @@ export default function LowStock() {
                   <Package className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Inventory Healthy</h3>
-                <p className="text-gray-500 text-sm">All products are currently well-stocked above {STOCK_THRESHOLD} units.</p>
+                <p className="text-gray-500 text-sm">All products are currently well-stocked above their alert thresholds.</p>
              </div>
            ) : (
              <table className="w-full text-left text-sm">
@@ -121,9 +121,9 @@ export default function LowStock() {
                      <td className="px-6 py-4 font-mono text-gray-500">{product.sku || 'N/A'}</td>
                      <td className="px-6 py-4">
                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                         (product.inventory || 0) === 0 ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700'
+                         (product.inventoryCount || 0) === 0 ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700'
                        }`}>
-                         {product.inventory || 0} Units
+                         {product.inventoryCount || 0} / {product.lowStockThreshold || 15}
                        </span>
                      </td>
                      <td className="px-6 py-4 text-right">

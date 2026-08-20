@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product } from '../types';
 import { getProducts } from '../services/catalogService';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface CatalogContextType {
   products: Product[];
@@ -18,10 +20,13 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [productTypes, setProductTypes] = useState<string[]>(['All']);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setIsLoading(true);
+    let isMounted = true;
+    
+    const fetchProducts = async (force = false) => {
+      if (force === false) setIsLoading(true);
       try {
-        const data = await getProducts();
+        const data = await getProducts(force);
+        if (!isMounted) return;
         setProducts(data);
         
         const uniqueCategories = ['All', ...Array.from(new Set(data.map(p => p.category).filter(Boolean)))];
@@ -31,10 +36,27 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
+        if (!isMounted) return;
         setIsLoading(false);
       }
     };
+    
+    // Initial fetch
     fetchProducts();
+
+    // Real-time stock listener on productVariants
+    const unsubscribe = onSnapshot(collection(db, 'productVariants'), (snapshot) => {
+      // Skip the initial trigger since we do a full fetch above
+      if (!snapshot.metadata.hasPendingWrites) {
+         // Debounce or just call it directly (we fetch silently)
+         fetchProducts(true);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   return (

@@ -1,0 +1,6 @@
+   141	
+   142	              <p className="text-2xl text-gray-900 dark:text-white mb-6 font-medium">{formatPrice(product.price)}</p>
+   143	              
+   144	              <p className="text-base text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+   145	                {product.description}
+   146	              </p>

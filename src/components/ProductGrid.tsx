@@ -26,9 +26,10 @@ interface ProductGridProps {
   onProductClick?: (product: Product) => void;
   onNotifyMe?: (product: Product) => void;
   onClearSearch?: () => void;
+  onOpenCart?: () => void;
 }
 
-export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading: propIsLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick, onNotifyMe, aiMatchedIds, isAiSearching, onClearSearch }: ProductGridProps) {
+export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery, activeType, activeCategory, sortOption, wishlistItems, onToggleWishlist, isLoading: propIsLoading = false, reviews, onOpenReviews, compareProducts = [], onToggleCompare, onProductClick, onNotifyMe, aiMatchedIds, isAiSearching, onClearSearch, onOpenCart }: ProductGridProps) {
   const { products, isLoading: contextIsLoading } = useCatalog();
   const isLoading = propIsLoading || contextIsLoading || isAiSearching;
   const [fuzzySearchTerm, setFuzzySearchTerm] = useState('');
@@ -213,6 +214,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
                     onToggleCompare={onToggleCompare}
                     onProductClick={onProductClick}
                     onNotifyMe={onNotifyMe}
+                    onOpenCart={onOpenCart}
                   />
                 </motion.div>
               ))}
@@ -258,6 +260,7 @@ export default function ProductGrid({ cartItems = [],  onAddToCart, searchQuery,
                     onToggleCompare={onToggleCompare}
                     onProductClick={onProductClick}
                     onNotifyMe={onNotifyMe}
+                    onOpenCart={onOpenCart}
                   />
                 </motion.div>
               ))}

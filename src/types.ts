@@ -8,6 +8,10 @@ export interface ToastType {
   title: string;
   message: string;
   type: 'success' | 'info' | 'error';
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 // --- NEW COMMERCE DATA MODEL ---
@@ -95,10 +99,13 @@ export interface ProductVariant {
   id: string;
   productId: string;
   name: string;
+  description?: string;
   sku: string;
   price: number;
   inventoryCount: number;
   attributes: Record<string, string>; // e.g., { color: 'Red', size: 'M' }
+  sizeGuideVideoUrl?: string;
+  isPinnedInSuggestions?: boolean;
 }
 
 export interface Compatibility {
@@ -141,6 +148,10 @@ export interface Product {
   image: string;
   
   rating: number;
+  inventoryCount?: number;
+  lowStockThreshold?: number;
+  sizeGuideVideoUrl?: string;
+  isPinnedInSuggestions?: boolean;
   priceHistory?: PriceHistoryPoint[];
   trustScore?: number;
   repairabilityScore?: number;
@@ -191,6 +202,8 @@ export interface Review {
 }
 
 export interface Address {
+  id?: string;
+  isDefault?: boolean;
   fullName: string;
   email?: string;
   phone?: string;
@@ -209,12 +222,21 @@ export interface WishlistCollection {
 }
 
 export interface UserProfileData {
+  id?: string;
   name: string;
   email: string;
   phone: string;
   address: string;
   avatar: string;
   isAdmin?: boolean;
+  savedAddresses?: Address[];
+  bodyMeasurements?: {
+    height?: string;
+    weight?: string;
+    chest?: string;
+    waist?: string;
+    hips?: string;
+  };
 }
 
 export interface WalletProduct {

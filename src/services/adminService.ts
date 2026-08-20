@@ -95,7 +95,7 @@ export async function getAllOrders() {
       const userOrdersRef = collection(db, `users/${userDoc.id}/orders`);
       const userOrdersSnap = await getDocs(userOrdersRef);
       userOrdersSnap.forEach(doc => {
-        allOrders.push({ id: doc.id, ...doc.data() });
+        allOrders.push({ id: doc.id, userId: userDoc.id, ...doc.data() });
       });
     }
     
@@ -256,6 +256,34 @@ export async function getCustomerDetails(userId: string) {
   }
 }
 
+export async function updateOrderStatus(userId: string, orderId: string, status: string) {
+  try {
+    const { doc, updateDoc } = await import('firebase/firestore');
+    const { db } = await import('../lib/firebase');
+    const orderRef = doc(db, `users/${userId}/orders`, orderId);
+    await updateDoc(orderRef, { status });
+    await logAuditAction('ORDER_STATUS_UPDATE', orderId, `Updated order status to: ${status}`);
+    return true;
+  } catch (error) {
+    console.error("Error updating order status", error);
+    return false;
+  }
+}
+
+export async function updateOrderReturnReason(userId: string, orderId: string, reason: string) {
+  try {
+    const { doc, updateDoc } = await import('firebase/firestore');
+    const { db } = await import('../lib/firebase');
+    const orderRef = doc(db, `users/${userId}/orders`, orderId);
+    await updateDoc(orderRef, { returnReason: reason });
+    await logAuditAction('ORDER_RETURN_PROCESS', orderId, `Processed return with reason: ${reason}`);
+    return true;
+  } catch (error) {
+    console.error("Error updating return reason", error);
+    return false;
+  }
+}
+
 export async function restockProduct(variantId: string, additionalAmount: number = 50) {
   try {
     const { doc, getDoc, updateDoc } = await import('firebase/firestore');
@@ -287,9 +315,63 @@ export async function restockProduct(variantId: string, additionalAmount: number
         await updateDoc(doc(db, 'inventory', invDoc.id), { quantity: currentInv + additionalAmount });
       }
     }
+    
+    await logAuditAction('PRODUCT_RESTOCK', variantId, `Restocked product by ${additionalAmount} units`);
+    
     return true;
   } catch (error) {
     console.error("Error restocking", error);
     return false;
+  }
+}
+
+export async function updateUserRole(userId: string, role: string) {
+  try {
+    const { doc, updateDoc } = await import('firebase/firestore');
+    const { db } = await import('../lib/firebase');
+    const ref = doc(db, 'users', userId);
+    await updateDoc(ref, { role, isAdmin: role === 'admin' || role === 'manager' });
+    await logAuditAction('USER_ROLE_UPDATE', userId, `Updated user role to: ${role}`);
+    return true;
+  } catch (err) {
+    console.error("Error updating role", err);
+    return false;
+  }
+}
+
+export async function logAuditAction(actionType: string, entityId: string, details: string) {
+  try {
+    const { collection, addDoc } = await import('firebase/firestore');
+    const { db, auth } = await import('../lib/firebase');
+    
+    const adminEmail = auth.currentUser?.email || 'System / Unknown Admin';
+    
+    await addDoc(collection(db, 'adminAuditLogs'), {
+      actionType,
+      entityId,
+      details,
+      adminEmail,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Error logging audit action:", error);
+  }
+}
+
+export async function getAuditLogs() {
+  try {
+    const { collection, getDocs, query, orderBy, limit } = await import('firebase/firestore');
+    const { db } = await import('../lib/firebase');
+    
+    const q = query(collection(db, 'adminAuditLogs'), orderBy('timestamp', 'desc'), limit(100));
+    const snapshot = await getDocs(q);
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error("Error fetching audit logs:", error);
+    return [];
   }
 }

@@ -1,6 +1,7 @@
 import { Fragment, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Minus, Plus, ShoppingBag, CheckCircle2, Loader2, CreditCard, MapPin, Truck } from 'lucide-react';
 import { CartItem, Order, Address, ToastType } from '../types';
@@ -21,21 +22,30 @@ interface CartProps {
 export default function Cart({ isOpen, onClose, items, isLoading = false, onUpdateQuantity, onRemoveItem, onClearCart, onPlaceOrder, onAddToast }: CartProps) {
   const { formatPrice } = useCurrency();
   const navigate = useNavigate();
+  const { userProfile } = useUser();
 
   const [checkoutState, setCheckoutState] = useState<'idle' | 'details' | 'loading' | 'success'>('idle');
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  
+  const defaultSavedAddress = userProfile.savedAddresses?.find(a => a.isDefault) || userProfile.savedAddresses?.[0];
 
-  const [address, setAddress] = useState<Address>({
-    fullName: 'Jane Doe',
-    email: 'kumarrachith0@gmail.com',
-    phone: '+1 234 567 8900',
+  const [address, setAddress] = useState<Address>(defaultSavedAddress || {
+    fullName: userProfile.name || 'Jane Doe',
+    email: userProfile.email || 'kumarrachith0@gmail.com',
+    phone: userProfile.phone || '+1 234 567 8900',
     addressLine1: '123 Tech Lane',
     city: 'San Francisco',
     state: 'CA',
     zipCode: '94105',
     country: 'USA'
   });
+  
+  useEffect(() => {
+    if (defaultSavedAddress) {
+      setAddress(defaultSavedAddress);
+    }
+  }, [defaultSavedAddress]);
   
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
   const [promoCode, setPromoCode] = useState("");

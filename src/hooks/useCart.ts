@@ -27,6 +27,7 @@ export function useCart(firebaseUser: any) {
   }, [cartItems, firebaseUser, isCartLoading]);
 
   const handleAddToCart = useCallback((product: Product & { selectedSize?: string }) => {
+    let wasNew = false;
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id && item.selectedSize === product.selectedSize);
       if (existing) {
@@ -36,9 +37,11 @@ export function useCart(firebaseUser: any) {
             : item
         );
       }
+      wasNew = true;
       return [...prev, { ...product, quantity: 1 }];
     });
     setIsCartOpen(true);
+    return wasNew;
   }, []);
 
   const handleUpdateQuantity = useCallback((id: string, quantity: number, selectedSize?: string) => {
