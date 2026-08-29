@@ -27,15 +27,15 @@ async function startServer() {
 
   app.post("/api/ai-recommend", async (req, res) => {
     try {
-      const { wishlistIds, cartIds } = req.body;
-      const cacheKey = JSON.stringify({ w: wishlistIds, c: cartIds });
+      const { wishlistIds, cartIds, viewedIds = [], orderedIds = [] } = req.body;
+      const cacheKey = JSON.stringify({ w: wishlistIds, c: cartIds, v: viewedIds, o: orderedIds });
       if (recommendCache.has(cacheKey)) {
         return res.json({ recommendedIds: recommendCache.get(cacheKey) });
       }
       if (!ai) return res.json({ recommendedIds: [] });
       const products = await getProducts();
       
-      const prompt = `You are an expert AI recommendation engine for LUMINA.The user has the following product IDs in their wishlist: ${JSON.stringify(wishlistIds)}The user has the following product IDs in their cart: ${JSON.stringify(cartIds)}Here is our catalog:${JSON.stringify(products.map((p) => ({ id: p.id, name: p.name, category: p.category, type: p.type })))}Based on their wishlist and cart, suggest 4 related product IDs from the catalog that they might also like. Do not suggest products already in their wishlist or cart if possible.Return a JSON array of 4 string product IDs. Only the array.`;
+      const prompt = `You are an expert AI recommendation engine for LUMINA.The user has the following product IDs in their wishlist: ${JSON.stringify(wishlistIds)}The user has the following product IDs in their cart: ${JSON.stringify(cartIds)}Here is our catalog:${JSON.stringify(products.map((p) => ({ id: p.id, name: p.name, category: p.category, type: p.type })))}Based on their wishlist, cart, browsing history, and past orders, suggest 4 related product IDs from the catalog that they might also like. Do not suggest products already in their wishlist, cart, or past orders if possible.Return a JSON array of 4 string product IDs. Only the array.`;
       
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -281,6 +281,28 @@ Return JSON format:
     } catch (e) {
       console.error(e);
       res.status(500).json({ error: "Chat failed" });
+    }
+  });
+
+  app.post("/api/generate-product-copy", async (req, res) => {
+    try {
+      const { keywords, name } = req.body;
+      if (!ai) return res.json({ copy: "AI features are currently disabled. Please provide an API key." });
+      
+      const prompt = `You are an expert e-commerce copywriter for a luxury brand named LUMINA. 
+      Write a compelling, SEO-optimized product description (1-2 short paragraphs) for a product named "${name || 'Unnamed Product'}". 
+      Incorporate these keywords/features: ${keywords}. 
+      Focus on luxury, quality, and conversion. Return ONLY the description text, no extra markdown formatting or preambles.`;
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3.7-flash",
+        contents: prompt
+      });
+      
+      res.json({ copy: response.text });
+    } catch (e) {
+      console.error("AI Copywriter Error:", e);
+      res.status(500).json({ error: "Failed to generate copy" });
     }
   });
 

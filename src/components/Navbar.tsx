@@ -1,4 +1,4 @@
-import { Clock, ShoppingBag, User, Search, Menu, X, Heart, Settings, LogOut, Package, CreditCard, Scale, Sun, Moon, Mic, MicOff } from 'lucide-react';
+import { Clock, ShoppingBag, User, Search, Menu, X, Heart, Settings, LogOut, Package, CreditCard, Scale, Sun, Moon, Mic, MicOff, Camera, Users } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCurrency, Currency } from '../contexts/CurrencyContext';
@@ -7,6 +7,7 @@ import { useUser } from '../contexts/UserContext';
 import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
 import SafeProductImage from './SafeProductImage';
+import CameraSearchModal from './CameraSearchModal';
 
 interface NavbarProps {
   cartItemCount: number;
@@ -50,6 +51,7 @@ export default function Navbar({
 
   const [showDesktopSuggestions, setShowDesktopSuggestions] = useState(false);
   const [showMobileSuggestions, setShowMobileSuggestions] = useState(false);
+  const [isCameraSearchOpen, setIsCameraSearchOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const desktopSuggestionsRef = useRef<HTMLDivElement>(null);
   const mobileSuggestionsRef = useRef<HTMLDivElement>(null);
@@ -190,42 +192,53 @@ export default function Navbar({
             <div className="relative w-10 h-10 mr-3 flex items-center justify-center overflow-visible">
               <motion.svg 
                 viewBox="0 0 100 100" 
-                className="w-full h-full drop-shadow-[0_0_10px_rgba(59,130,246,0.6)]"
-                initial={{ rotate: 0 }}
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="w-full h-full drop-shadow-[0_0_15px_rgba(139,92,246,0.6)]"
               >
                 <defs>
-                  <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="50%" stopColor="#8b5cf6" />
-                    <stop offset="100%" stopColor="#ec4899" />
-                  </linearGradient>
-                  <linearGradient id="logo-gradient-inner" x1="100%" y1="100%" x2="0%" y2="0%">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#a855f7" />
+                  <linearGradient id="cyber-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="50%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#06b6d4" />
                   </linearGradient>
                 </defs>
-                <motion.polygon 
-                  points="50,5 95,25 95,75 50,95 5,75 5,25" 
+                {/* Outer wireframe */}
+                <motion.path 
+                  d="M50 5 L93 30 L93 70 L50 95 L7 70 L7 30 Z" 
                   fill="none" 
-                  stroke="url(#logo-gradient)" 
-                  strokeWidth="4"
-                  animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.polygon 
-                  points="50,15 85,32 85,68 50,85 15,68 15,32" 
-                  fill="url(#logo-gradient-inner)"
-                  opacity="0.2"
-                  animate={{ rotate: [-10, 10, -10] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                  stroke="url(#cyber-gradient)" 
+                  strokeWidth="2.5"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                   style={{ transformOrigin: "50px 50px" }}
                 />
-                <polygon points="50,25 75,40 75,60 50,75 25,60 25,40" fill="url(#logo-gradient)" opacity="0.8" />
-                <polygon points="50,35 65,45 65,55 50,65 35,55 35,45" fill="#fff" />
+                {/* Inner glowing core */}
+                <motion.path 
+                  d="M50 20 L80 37 L80 63 L50 80 L20 63 L20 37 Z" 
+                  fill="url(#cyber-gradient)"
+                  opacity="0.15"
+                  animate={{ scale: [0.9, 1.1, 0.9] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ transformOrigin: "50px 50px" }}
+                />
+                {/* Hyper-cube connecting lines */}
+                <motion.g stroke="url(#cyber-gradient)" strokeWidth="1.5" opacity="0.6">
+                  <path d="M50 5 L50 20" />
+                  <path d="M93 30 L80 37" />
+                  <path d="M93 70 L80 63" />
+                  <path d="M50 95 L50 80" />
+                  <path d="M7 70 L20 63" />
+                  <path d="M7 30 L20 37" />
+                </motion.g>
+                {/* Center diamond pulse */}
+                <motion.polygon 
+                  points="50,35 65,50 50,65 35,50" 
+                  fill="#fff" 
+                  animate={{ opacity: [0.4, 1, 0.4], scale: [0.8, 1.2, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ transformOrigin: "50px 50px" }}
+                />
               </motion.svg>
-              <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full pointer-events-none group-hover:bg-purple-500/30 transition-colors duration-500" />
+              <div className="absolute inset-0 bg-purple-500/20 blur-xl rounded-full pointer-events-none group-hover:bg-cyan-500/30 transition-colors duration-500" />
             </div>
             <span className="text-3xl font-extrabold tracking-tighter text-gray-900 dark:text-white flex items-center">
               LUMINA
@@ -233,16 +246,41 @@ export default function Navbar({
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-1 items-center bg-white/50 dark:bg-white/5 p-1 rounded-full backdrop-blur-md border border-gray-200 dark:border-white/10">
-            {isAdmin && (
-              <Link 
-                to="/admin"
-                className="font-bold px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md text-sm tracking-wide bg-gray-900 text-white dark:bg-white dark:text-black shadow-sm flex items-center"
-                aria-label="Admin Portal"
-              >
-                <Shield className="w-4 h-4 mr-2" /> Admin
-              </Link>
-            )}
+          {(isAdmin || categories.length > 1) && (
+            <div className="hidden md:flex space-x-1 items-center bg-white/50 dark:bg-white/5 p-1 rounded-full backdrop-blur-md border border-gray-200 dark:border-white/10">
+              {!isAdmin && (
+                <button
+                  onClick={() => onCategoryChange('All')}
+                  className={`font-bold px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md text-sm tracking-wide ${
+                    activeCategory === 'All' 
+                       ? 'text-white bg-black dark:bg-white dark:text-black shadow-sm' 
+                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10'
+                  }`}
+                >
+                  Home
+                </button>
+              )}
+              {isAdmin && (
+                <Link 
+                  to="/admin"
+                  className="font-bold px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md text-sm tracking-wide bg-gray-900 text-white dark:bg-white dark:text-black shadow-sm flex items-center"
+                  aria-label="Admin Portal"
+                >
+                  <Shield className="w-4 h-4 mr-2" /> Admin
+                </Link>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => onCategoryChange('All')}
+                  className={`font-bold px-5 py-2 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-md text-sm tracking-wide ${
+                    activeCategory === 'All' 
+                       ? 'text-white bg-black dark:bg-white dark:text-black shadow-sm' 
+                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/10'
+                  }`}
+                >
+                  Home
+                </button>
+              )}
             {categories.slice(1).map(category => (
               <button
                 key={category}
@@ -256,7 +294,8 @@ export default function Navbar({
                 {category}
               </button>
             ))}
-          </div>
+            </div>
+          )}
 
           {/* Icons */}
           <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
@@ -275,17 +314,26 @@ export default function Navbar({
                 onKeyDown={handleKeyDown}
                 className="block w-64 pl-10 pr-10 py-2 bg-gray-100 dark:bg-white/5 border border-transparent dark:border-white/10 rounded-full text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 focus:bg-white dark:focus:bg-white/10 transition-all text-gray-900 dark:text-white font-medium relative z-10"
               />
-              <button
-                onClick={toggleListening}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors z-10"
-                title={isListening ? "Stop listening" : "Start voice search"}
-              >
-                {isListening ? (
-                  <Mic className="h-4 w-4 text-red-500 animate-pulse" />
-                ) : (
-                  <MicOff className="h-4 w-4" />
-                )}
-              </button>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2 z-10">
+                <button
+                  onClick={() => setIsCameraSearchOpen(true)}
+                  className="text-gray-400 hover:text-purple-500 transition-colors"
+                  title="Snap & Shop (Visual Search)"
+                >
+                  <Camera className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={toggleListening}
+                  className="text-gray-400 hover:text-blue-500 transition-colors"
+                  title={isListening ? "Stop listening" : "Start voice search"}
+                >
+                  {isListening ? (
+                    <Mic className="h-4 w-4 text-red-500 animate-pulse" />
+                  ) : (
+                    <MicOff className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
               
               <AnimatePresence>
                 {showDesktopSuggestions && (recentSearches.length > 0 || searchQuery.trim() !== '') && (
@@ -464,17 +512,26 @@ export default function Navbar({
                   onKeyDown={handleKeyDown}
                   className="block w-full pl-4 pr-10 py-3 border border-gray-200 dark:border-white/10 rounded-xl text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white relative z-10"
                 />
-                <button
-                  onClick={toggleListening}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-blue-500 transition-colors z-10"
-                  title={isListening ? "Stop listening" : "Start voice search"}
-                >
-                  {isListening ? (
-                    <Mic className="h-4 w-4 text-red-500 animate-pulse" />
-                  ) : (
-                    <MicOff className="h-4 w-4" />
-                  )}
-                </button>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center space-x-2 z-10">
+                  <button
+                    onClick={() => setIsCameraSearchOpen(true)}
+                    className="text-gray-400 hover:text-purple-500 transition-colors"
+                    title="Snap & Shop"
+                  >
+                    <Camera className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={toggleListening}
+                    className="text-gray-400 hover:text-blue-500 transition-colors"
+                    title={isListening ? "Stop listening" : "Start voice search"}
+                  >
+                    {isListening ? (
+                      <Mic className="h-4 w-4 text-red-500 animate-pulse" />
+                    ) : (
+                      <MicOff className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
                 
                 <AnimatePresence>
                   {showMobileSuggestions && (recentSearches.length > 0 || searchQuery.trim() !== '') && (
@@ -623,6 +680,19 @@ export default function Navbar({
               </div>
 
               <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    onCategoryChange('All');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`block w-full text-left px-4 py-3 rounded-xl text-base font-bold transition-colors ${
+                    activeCategory === 'All' 
+                       ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400' 
+                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  Home
+                </button>
                 {categories.slice(1).map(category => (
                   <button
                     key={category}
@@ -644,6 +714,7 @@ export default function Navbar({
           </motion.div>
         )}
       </AnimatePresence>
+      <CameraSearchModal isOpen={isCameraSearchOpen} onClose={() => setIsCameraSearchOpen(false)} />
     </nav>
   );
 }

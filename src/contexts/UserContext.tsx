@@ -19,6 +19,8 @@ interface UserContextType {
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfileData>>;
   reviews: Review[];
   setReviews: React.Dispatch<React.SetStateAction<Review[]>>;
+  viewedProducts: string[];
+  addViewedProduct: (productId: string) => void;
 }
 
 const defaultProfile: UserProfileData = {
@@ -39,7 +41,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [walletItems, setWalletItems] = useState<WalletProduct[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfileData>(defaultProfile);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [viewedProducts, setViewedProducts] = useState<string[]>(() => {
+    const saved = localStorage.getItem('viewedProducts');
+    return saved ? JSON.parse(saved) : [];
+  });
   const isInitialLoad = useRef(true);
+
+  const addViewedProduct = (productId: string) => {
+    setViewedProducts(prev => {
+      const updated = [productId, ...prev.filter(id => id !== productId)].slice(0, 10);
+      localStorage.setItem('viewedProducts', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -111,7 +125,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       orders, setOrders,
       walletItems, setWalletItems,
       userProfile, setUserProfile,
-      reviews, setReviews
+      reviews, setReviews,
+      viewedProducts, addViewedProduct
     }}>
       {children}
     </UserContext.Provider>

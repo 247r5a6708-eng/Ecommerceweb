@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ImageOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProductImage } from '../types';
@@ -14,9 +14,32 @@ interface SafeProductImageProps {
 
 export default function SafeProductImage({ src, alt, className, imageClassName, style, imageObj }: SafeProductImageProps) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [inView, setInView] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const imageUrl = imageObj?.url || src;
 
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!inView) return;
+
     if (!imageUrl) {
       setStatus('error');
       return;
@@ -36,10 +59,10 @@ export default function SafeProductImage({ src, alt, className, imageClassName, 
     img.onerror = () => {
       setStatus('error');
     };
-  }, [imageUrl, imageObj]);
+  }, [imageUrl, imageObj, inView]);
 
   return (
-    <div className={`relative overflow-hidden bg-gray-100 dark:bg-gray-800 ${className || ''}`}>
+    <div ref={containerRef} className={`relative overflow-hidden bg-gray-100 dark:bg-gray-800 ${className || ''}`}>
       <AnimatePresence mode="wait">
         {status === 'loading' && (
           <motion.div
@@ -66,6 +89,7 @@ export default function SafeProductImage({ src, alt, className, imageClassName, 
             src={imageUrl}
             alt={alt}
             style={style}
+            loading="lazy"
             className={`w-full h-full object-cover ${imageClassName || ''}`}
           />
         )}

@@ -1,3 +1,5 @@
+const fs = require('fs');
+let code = `
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore } from 'firebase/firestore';
@@ -9,3 +11,5 @@ export const auth = getAuth(app);
 
 import { GoogleAuthProvider } from 'firebase/auth';
 export const googleProvider = new GoogleAuthProvider();
+`;
+fs.writeFileSync('src/lib/firebase.ts', code.trim() + '\n');

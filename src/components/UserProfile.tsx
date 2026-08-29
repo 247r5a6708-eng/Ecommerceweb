@@ -3,14 +3,15 @@ import { Fragment, useState, useEffect, useMemo } from 'react';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { X, Clock, Package, CheckCircle2, User, Mail, MapPin, Edit2, LogOut, XCircle, Phone, Image as ImageIcon, Wallet, Shield, FileText, Wrench, Gift, Copy, Check, Home, Plus, Trash2, Ruler } from 'lucide-react';
+import { X, Clock, Package, CheckCircle2, User, Mail, MapPin, Edit2, LogOut, XCircle, Phone, Image as ImageIcon, Wallet, Shield, FileText, Wrench, Gift, Copy, Check, Home, Plus, Trash2, Ruler, Camera } from 'lucide-react';
 import { Order, UserProfileData, WalletProduct, Address } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Download } from 'lucide-react';
+import { Download, Calendar } from 'lucide-react';
 import SafeProductImage from './SafeProductImage';
 import OrderTrackingMap from './OrderTrackingMap';
 import OrderStatusStepper from './OrderStatusStepper';
+import GiftReminder from './GiftReminder';
 
 interface UserProfileProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
 
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<UserProfileData>(userProfile);
-  const [activeTab, setActiveTab] = useState<'orders' | 'wallet' | 'referral' | 'addresses' | 'measurements'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'wallet' | 'referral' | 'addresses' | 'measurements' | 'gifts'>('orders');
 
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
   const [cancelOrderData, setCancelOrderData] = useState<{ id: string, reason: string } | null>(null);
@@ -399,9 +400,15 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                 </button>
                 <button
                   onClick={() => setActiveTab('measurements')}
-                  className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'measurements' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                  className={`py-3 text-sm font-medium border-b-2 mr-6 transition-colors ${activeTab === 'measurements' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                 >
                   <span className="flex items-center"><Ruler className="w-4 h-4 mr-2" /> Measurements</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('gifts')}
+                  className={`py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'gifts' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                >
+                  <span className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> AI Gifts</span>
                 </button>
               </div>
 
@@ -522,12 +529,17 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                                     <div className="flex-1 min-w-0">
                                       
                                       <p className="text-gray-900 dark:text-gray-200 font-medium truncate">{item.name}</p>
-                                      <div className="flex text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-x-2">
+                                      <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-0.5 space-x-2">
                                         <span>Qty: {item.quantity}</span>
                                         {item.sku && <span>SKU: {item.sku}</span>}
                                         {item.seller && <span>Sold by: {item.seller}</span>}
                                       </div>
-
+                                      <button 
+                                        onClick={() => alert(`Starting Trade-in flow for ${item.name}... Get $${(item.price * 0.3).toFixed(2)} store credit.`)}
+                                        className="mt-2 text-xs font-bold text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 flex items-center"
+                                      >
+                                        <Wrench className="w-3 h-3 mr-1" /> Trade-in for Circular Economy Credit
+                                      </button>
                                     </div>
                                     <p className="text-gray-900 dark:text-white ml-2 font-medium">{formatPrice((item.price * item.quantity))}</p>
                                   </li>
@@ -714,6 +726,14 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                   <div className="space-y-4">
                     <div className="flex justify-between items-center mb-6">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">Body Measurements</h3>
+                      <button 
+                        type="button"
+                        onClick={() => alert("Launching Camera for Biometric AI Sizing... Please stand 6 feet back.")}
+                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600/10 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-bold hover:bg-blue-600/20 transition-colors"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Biometric Scan</span>
+                      </button>
                     </div>
                     <form onSubmit={(e) => {
                       e.preventDefault();
@@ -788,6 +808,8 @@ export default function UserProfile({ isOpen, onClose, orders, onCancelOrder, us
                       </div>
                     </form>
                   </div>
+                ) : activeTab === 'gifts' ? (
+                  <GiftReminder />
                 ) : null}
               </div>
             </div>

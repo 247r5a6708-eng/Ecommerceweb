@@ -103,6 +103,7 @@ export interface ProductVariant {
   sku: string;
   price: number;
   inventoryCount: number;
+  lowStockThreshold?: number;
   attributes: Record<string, string>; // e.g., { color: 'Red', size: 'M' }
   sizeGuideVideoUrl?: string;
   isPinnedInSuggestions?: boolean;

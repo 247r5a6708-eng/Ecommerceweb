@@ -19,6 +19,7 @@ import Cart from './components/Cart';
 import UserProfile from './components/UserProfile';
 import Wishlist from './components/Wishlist';
 import BackToTop from './components/BackToTop';
+import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import ReviewModal from './components/ReviewModal';
 import ToastContainer from './components/ToastContainer';
 import AuthModal from './components/AuthModal';
@@ -44,6 +45,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import * as firestoreService from './lib/firestore';
 
 export default function App() {
+  const navigate = useNavigate();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const { products, isLoading, categories, productTypes } = useCatalog();
@@ -68,6 +70,7 @@ export default function App() {
 
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isKeyboardHelpOpen, setIsKeyboardHelpOpen] = useState(false);
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -363,6 +366,9 @@ export default function App() {
       } else if (e.key.toLowerCase() === 'w') {
         e.preventDefault();
         setIsWishlistOpen(prev => !prev);
+      } else if (e.key === '?') {
+        e.preventDefault();
+        setIsKeyboardHelpOpen(prev => !prev);
       }
     };
 
@@ -551,7 +557,10 @@ export default function App() {
         cartItemCount={cartItemCount} 
         onOpenCart={() => setIsCartOpen(true)} 
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(query) => {
+          setSearchQuery(query);
+          if (query) navigate('/');
+        }}
         wishlistItemCount={wishlistItems.length}
         hasWishlistAlerts={hasWishlistAlerts}
         onOpenProfile={() => firebaseUser ? setIsProfileOpen(true) : setIsAuthOpen(true)}
@@ -564,6 +573,7 @@ export default function App() {
           setActiveType('All');
           setSearchQuery('');
           setAiMatchedIds(null);
+          navigate('/');
         }}
         onAddToast={addToast}
       />
@@ -702,6 +712,17 @@ export default function App() {
       />
       
       <BackToTop />
+      <KeyboardShortcutsModal isOpen={isKeyboardHelpOpen} onClose={() => setIsKeyboardHelpOpen(false)} />
+      
+      {/* Floating Keyboard Shortcuts Trigger */}
+      <button
+        onClick={() => setIsKeyboardHelpOpen(true)}
+        className="fixed bottom-6 left-6 p-3 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-full shadow-md border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all z-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-label="Keyboard Shortcuts"
+        title="Keyboard Shortcuts (?)"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-keyboard"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg>
+      </button>
       
       <RecentlyViewed
         products={recentlyViewed}

@@ -214,9 +214,9 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
             </motion.button>
           </div>
 
-          {/* Quick Actions (Always visible on mobile, hover on desktop) */}
+          {/* Quick Actions (Hover on desktop, hidden on mobile for cleaner look) */}
           <div 
-            className="absolute bottom-2 sm:bottom-4 left-0 right-0 flex justify-center space-x-2 sm:space-x-3 translate-y-0 opacity-100 sm:translate-y-12 sm:opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 px-2 sm:px-4 z-20"
+            className="hidden sm:flex absolute bottom-4 left-0 right-0 justify-center space-x-3 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 px-4 z-20"
             style={{ transform: "translateZ(50px)" }}
           >
             <button
@@ -264,7 +264,7 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
 
         <div className="flex flex-1 flex-col p-3 sm:p-6 z-10" style={{ transform: "translateZ(20px)" }}>
           <div className="flex justify-between items-start mb-2 sm:mb-3">
-            <div>
+            <div className="flex-1 min-w-0 pr-2">
               <p className="text-[9px] sm:text-[10px] font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-widest mb-1 sm:mb-2 line-clamp-1">
                 {product.brand} • {product.category}{product.seller && ` • ${product.seller}`}
               </p>
@@ -343,9 +343,11 @@ export default function ProductCard({ cartItems = [], product, onAddToCart, isWi
             </div>
           </div>
           
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-light line-clamp-2 mt-auto leading-relaxed">
-            {product.description}
-          </p>
+          <div className="hidden sm:block mt-auto">
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-light line-clamp-2 leading-relaxed">
+              {product.description}
+            </p>
+          </div>
 
           {product.priceHistory && (
             <div className="mt-4 relative z-20">

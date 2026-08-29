@@ -1,12 +1,12 @@
 {
-  "projectId": "festive-calling-lt8c4",
-  "appId": "1:302492483861:web:d01eb901be307bcc3b291c",
-  "apiKey": "AIzaSyBTUSreb_iJK0LVz1SCmsxefTV8s9lT6ME",
-  "authDomain": "festive-calling-lt8c4.firebaseapp.com",
+  "projectId": "gen-lang-client-0916070643",
+  "appId": "1:566096581698:web:ae4f231a7beb3a4d6f49db",
+  "apiKey": "AIzaSyDxaAf8-SdupSlneRhoK380xt2rya-PX68",
+  "authDomain": "gen-lang-client-0916070643.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-ecommercestore-79d49f75-0240-4108-a181-1407f20ca8e6",
-  "storageBucket": "festive-calling-lt8c4.firebasestorage.app",
-  "messagingSenderId": "302492483861",
+  "storageBucket": "gen-lang-client-0916070643.firebasestorage.app",
+  "messagingSenderId": "566096581698",
   "measurementId": "",
-  "oAuthClientId": "302492483861-9ab0str01sbundqocd062upqejs8vcf8.apps.googleusercontent.com",
+  "oAuthClientId": "566096581698-16buttjn261qmpdqdufn6u7ckvfjn7vi.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

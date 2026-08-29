@@ -26,6 +26,7 @@ export const CatalogProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (force === false) setIsLoading(true);
       try {
         const data = await getProducts(force);
+        console.log('Fetched products in CatalogContext:', data.length);
         if (!isMounted) return;
         setProducts(data);
         

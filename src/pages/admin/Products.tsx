@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getProducts, deleteProduct, updateProductVariant, addProduct } from '../../services/catalogService';
 import { Product } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, Plus, Trash2, Edit2, Package, X, Video, Pin, RefreshCw, Square, CheckSquare, Settings2, Download, ChevronDown, BellRing } from 'lucide-react';
+import { Loader2, Plus, Trash2, Edit2, Package, X, Video, Pin, RefreshCw, Square, CheckSquare, Settings2, Download, ChevronDown, BellRing, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAllOrders } from '../../services/adminService';
 import { checkAndTriggerLowStockAlert } from '../../services/emailService';
@@ -236,6 +236,39 @@ export default function AdminProducts() {
     setIsAddingProduct(false);
   };
 
+  const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
+
+  const handleGenerateCopy = async () => {
+    if (!editForm.name) {
+      toast.error("Please enter a product name first.");
+      return;
+    }
+    
+    // We'll prompt for some basic keywords, or just use category + name
+    const keywords = prompt("Enter a few keywords (e.g., cotton, oversized, elegant) to guide the AI:", editForm.category || "luxury");
+    if (keywords === null) return;
+    
+    setIsGeneratingCopy(true);
+    const toastId = toast.loading("AI is writing description...");
+    try {
+      const response = await fetch("/api/generate-product-copy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editForm.name, keywords })
+      });
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      
+      setEditForm({ ...editForm, description: data.copy });
+      toast.success("Description generated!", { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate description", { id: toastId });
+    } finally {
+      setIsGeneratingCopy(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -436,8 +469,19 @@ export default function AdminProducts() {
                  </div>
                  
                  <div>
-                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description</label>
-                   <textarea rows={3} value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all text-sm"></textarea>
+                   <div className="flex justify-between items-center mb-2">
+                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Description</label>
+                     <button 
+                       type="button" 
+                       onClick={handleGenerateCopy}
+                       disabled={isGeneratingCopy}
+                       className="text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors flex items-center disabled:opacity-50"
+                     >
+                       {isGeneratingCopy ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
+                       AI Write
+                     </button>
+                   </div>
+                   <textarea rows={4} value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-gray-900 transition-all text-sm"></textarea>
                  </div>
                  
                  {isAddingProduct && (

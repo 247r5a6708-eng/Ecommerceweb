@@ -30,7 +30,17 @@ export default function CompareModal({ isOpen, onClose, products, onRemoveProduc
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productIds: products.map(p => p.id) })
           });
-          const data = await res.json();
+          let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
           setAiComparison(data);
         } catch (error) {
           console.error('Failed to get AI comparison:', error);

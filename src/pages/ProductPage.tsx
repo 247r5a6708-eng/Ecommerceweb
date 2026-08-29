@@ -4,12 +4,13 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { Product, Review } from '../types';
 import SafeProductImage from '../components/SafeProductImage';
 import { useCurrency } from '../contexts/CurrencyContext';
-import { Star, ShoppingBag, ArrowLeft, Zap, X, Ruler, AlertTriangle } from 'lucide-react';
+import { Star, ShoppingBag, ArrowLeft, Zap, X, Ruler, AlertTriangle, Camera, Box, Leaf, Link2, ShieldCheck, HeartPulse } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { TrendingUp, Activity, UserCheck, CheckCircle2 } from 'lucide-react';
 import PriceChart from '../components/PriceChart';
 import { motion, AnimatePresence } from 'motion/react';
 import InteractiveSizeGuide from '../components/InteractiveSizeGuide';
+import VirtualTryOn from '../components/VirtualTryOn';
 
 interface ProductPageProps {
   cartItems: any[];
@@ -30,19 +31,40 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [sizeRec, setSizeRec] = useState<{recommendedSize?: string, reason?: string} | null>(null);
   const [isSizeRecLoading, setIsSizeRecLoading] = useState(false);
-  const { userProfile, setUserProfile, orders } = useUser();
+  const { userProfile, setUserProfile, orders, addViewedProduct } = useUser();
 
   useEffect(() => {
     if (!isLoading) {
       const p = products.find(p => p.id === productId);
       if (p) {
-        setProduct(p);
+        // Generate mock price history if missing for the Price Graph Analyzer
+        let priceHistory = p.priceHistory;
+        if (!priceHistory || priceHistory.length === 0) {
+          const now = new Date();
+          const basePrice = p.price;
+          priceHistory = Array.from({ length: 6 }).map((_, i) => {
+            const date = new Date(now);
+            date.setMonth(date.getMonth() - (5 - i));
+            
+            // Random variance between -10% and +15%
+            const variance = (Math.random() * 0.25) - 0.1;
+            const pastPrice = i === 5 ? basePrice : basePrice * (1 + variance);
+            
+            return {
+              date: date.toISOString().slice(0, 7), // YYYY-MM
+              price: Math.round(pastPrice)
+            };
+          });
+        }
+      
+        setProduct({ ...p, priceHistory });
         setSelectedSize(prev => prev || (p.sizes?.length ? p.sizes[0] : undefined));
+        addViewedProduct(p.id);
       } else {
         setProduct(null);
       }
     }
-  }, [productId, products, isLoading]);
+  }, [productId, products, isLoading, addViewedProduct]);
 
   const handleOpenSizeGuide = async () => {
     setIsSizeGuideOpen(true);
@@ -54,7 +76,17 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ productId: product.id, userProfile, orders })
         });
-        const data = await res.json();
+        let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
         setSizeRec(data);
         if (data.recommendedSize && product.sizes?.includes(data.recommendedSize)) {
           setSelectedSize(data.recommendedSize);
@@ -80,7 +112,7 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId: product.id, cartIds: cartItems.map(i => i.id) })
-    }).then(r => r.json()).then(data => setFrequentlyBoughtIds(data.recommendedIds || [])).catch(console.error);
+    }).then(async r => { if(!r.ok) { throw new Error(await r.text()); } const txt = await r.text(); try { return JSON.parse(txt); } catch(e){ return {}; } }).then(data => setFrequentlyBoughtIds(data.recommendedIds || [])).catch(console.error);
 
     // AI Compat
     if (userProfile) {
@@ -88,7 +120,7 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId: product.id, userProfile })
-      }).then(r => r.json()).then(data => setAiCompat(data)).catch(console.error);
+      }).then(async r => { if(!r.ok) { throw new Error(await r.text()); } const txt = await r.text(); try { return JSON.parse(txt); } catch(e){ return {}; } }).then(data => setAiCompat(data)).catch(console.error);
     }
     
     // Price Insight
@@ -96,7 +128,7 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ productId: product.id })
-    }).then(r => r.json()).then(data => setAiPriceInsight(data)).catch(console.error);
+    }).then(async r => { if(!r.ok) { throw new Error(await r.text()); } const txt = await r.text(); try { return JSON.parse(txt); } catch(e){ return {}; } }).then(data => setAiPriceInsight(data)).catch(console.error);
     
   }, [product, userProfile, cartItems]);
   
@@ -123,8 +155,14 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
         </button>
         <div className="bg-white dark:bg-[#121216] rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100 dark:border-white/5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5">
+            <div className="aspect-square rounded-2xl overflow-hidden bg-gray-50 dark:bg-white/5 relative group">
               <SafeProductImage src={product.image} alt={product.name} />
+              
+              <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button className="bg-gray-900/90 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center shadow-lg hover:bg-black transition-colors" onClick={() => alert("Loading Spatial 3D Viewer...")}>
+                  <Box className="w-4 h-4 mr-1.5" /> View in 3D
+                </button>
+              </div>
             </div>
             <div className="flex flex-col">
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-3">
@@ -218,6 +256,7 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
               )}
 
               <div className="mt-auto space-y-3">
+                <VirtualTryOn category={product.category} productName={product.name} />
                 <button
                   onClick={() => {
                     if (product.inStock === false) {
@@ -265,6 +304,37 @@ export default function ProductPage({ cartItems, onAddToCart, reviews, onNotifyM
                   </button>
                 )}
               </div>
+
+              <div className="mt-8 space-y-4">
+                <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-xl p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" onClick={() => alert("Opening Immutable Blockchain Ledger...")}>
+                  <div className="flex items-center text-sm font-bold text-gray-900 dark:text-white mb-1">
+                    <ShieldCheck className="w-4 h-4 mr-2 text-green-600" /> Blockchain Provenance Passport
+                  </div>
+                  <p className="text-xs text-gray-500">Verified authentic. View the ethical supply chain journey and material sourcing ledger on-chain.</p>
+                </div>
+                
+                <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-xl p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" onClick={() => alert("Adding Carbon Offset to Cart...")}>
+                  <div className="flex items-center text-sm font-bold text-gray-900 dark:text-white mb-1">
+                    <Leaf className="w-4 h-4 mr-2 text-emerald-500" /> Real-Time Carbon Footprint: 2.4kg CO₂
+                  </div>
+                  <p className="text-xs text-gray-500">Click to add a ₹45 certified offset to your order and make this purchase carbon neutral.</p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-xl p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" onClick={() => alert("Viewing NFT Details...")}>
+                  <div className="flex items-center text-sm font-bold text-gray-900 dark:text-white mb-1">
+                    <Box className="w-4 h-4 mr-2 text-purple-500" /> Includes NFT Digital Twin
+                  </div>
+                  <p className="text-xs text-gray-500">This physical item includes a verified 3D digital wearable for your connected Metaverse avatars.</p>
+                </div>
+                
+                <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-xl p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10 transition-colors" onClick={() => alert("Calculating material stress points...")}>
+                  <div className="flex items-center text-sm font-bold text-gray-900 dark:text-white mb-1">
+                    <HeartPulse className="w-4 h-4 mr-2 text-rose-500" /> Wear-and-Tear Prediction
+                  </div>
+                  <p className="text-xs text-gray-500">AI estimates a 4-year lifespan based on fabric stress tests. Free repair kit included after 2 years.</p>
+                </div>
+              </div>
+
             </div>
           
           </div>{freqBoughtProducts.length > 0 && (

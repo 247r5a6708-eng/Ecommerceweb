@@ -35,7 +35,17 @@ export default function AIChatBot() {
           history: messages.map(m => ({ role: m.role, text: m.content }))
         })
       });
-      const data = await res.json();
+      let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
       
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply || "I'm having trouble thinking right now." }]);
     } catch (error) {

@@ -59,7 +59,17 @@ export default function InteractiveSizeGuide({ isOpen, onClose, product, userPro
           orders: [] // we can omit orders or fetch them if needed
         })
       });
-      const data = await res.json();
+      let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
       setRecommendation(data);
     } catch (err) {
       console.error('Size rec failed', err);

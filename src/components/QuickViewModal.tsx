@@ -41,7 +41,17 @@ export default function QuickViewModal({ cartItems = [], product, isOpen, onClos
               cartIds: cartItems.map(c => c.id || c.productId)
             })
           });
-          const data = await res.json();
+          let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
           setFrequentlyBoughtIds(data.recommendedIds || []);
         } catch (error) {
           console.error("Failed to fetch freq bought", error);
@@ -69,7 +79,17 @@ export default function QuickViewModal({ cartItems = [], product, isOpen, onClos
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId: product.id, userProfile })
           });
-          const data = await res.json();
+          let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
           setAiCompat(data);
         } catch (error) {
           console.error("Failed to fetch compat", error);
@@ -95,7 +115,17 @@ export default function QuickViewModal({ cartItems = [], product, isOpen, onClos
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId: product.id })
           });
-          const data = await res.json();
+          let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
           setAiPriceInsight(data);
         } catch (error) {
           console.error("Failed to fetch price insight", error);

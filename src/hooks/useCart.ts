@@ -22,7 +22,10 @@ export function useCart(firebaseUser: any) {
 
   useEffect(() => {
     if (firebaseUser && !isCartLoading) {
-      firestoreService.saveUserCart(firebaseUser.uid, cartItems);
+      const timer = setTimeout(() => {
+        firestoreService.saveUserCart(firebaseUser.uid, cartItems);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [cartItems, firebaseUser, isCartLoading]);
 

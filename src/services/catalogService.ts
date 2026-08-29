@@ -122,7 +122,7 @@ export async function getProducts(forceRefresh = false): Promise<Product[]> {
     lastCacheTime = now;
     return products;
   } catch (error) {
-    console.error('Error fetching catalog:', error);
+    console.error('Error fetching catalog:', error.message, error);
     return [];
   }
 }
@@ -279,8 +279,10 @@ export async function createImportedProducts(parsedProducts: any[]) {
       code: p.sku || `SKU-${Math.floor(Math.random() * 100000)}`
     });
     
-    if (p.images && p.images.length > 0) {
-      p.images.forEach((url: string, index: number) => {
+    const imagesToSave = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
+    
+    if (imagesToSave.length > 0) {
+      imagesToSave.forEach((url: string, index: number) => {
         const imgId = `img-${crypto.randomUUID().split('-')[0]}`;
         batch.set(doc(db, 'productImages', imgId), {
           id: imgId,

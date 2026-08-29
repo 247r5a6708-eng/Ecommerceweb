@@ -6,15 +6,18 @@ import './index.css';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { CatalogProvider } from './contexts/CatalogContext';
 import { UserProvider } from './contexts/UserContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <CurrencyProvider>
-      <CatalogProvider>
-        <UserProvider>
-        <BrowserRouter><App /></BrowserRouter>
-      </UserProvider>
-      </CatalogProvider>
-    </CurrencyProvider>
+    <GoogleOAuthProvider clientId={(import.meta as any).env.VITE_GOOGLE_CLIENT_ID || ""}>
+      <CurrencyProvider>
+        <CatalogProvider>
+          <UserProvider>
+            <BrowserRouter><App /></BrowserRouter>
+          </UserProvider>
+        </CatalogProvider>
+      </CurrencyProvider>
+    </GoogleOAuthProvider>
   </StrictMode>,
 );

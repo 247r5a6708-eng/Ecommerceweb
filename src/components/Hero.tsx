@@ -125,32 +125,19 @@ export default function Hero({ onSearch }: HeroProps) {
             <span className="text-gray-900 dark:text-white font-medium">Shop The</span> <br />
             <span className="text-neutral-400 dark:text-neutral-500 italic">Future</span>
           </motion.h1>
-          
+
           <motion.form 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
             onSubmit={handleSubmit} 
-            className={`group max-w-3xl mx-auto ${showSuggestions ? 'fixed inset-0 z-[100] bg-white dark:bg-[#030305] sm:bg-transparent sm:relative sm:z-20 p-4 sm:p-0 overflow-y-auto sm:overflow-visible' : 'relative z-20'}`}
+            className={`group max-w-3xl mx-auto ${showSuggestions ? 'relative z-[100] bg-transparent sm:z-20 p-0 overflow-visible' : 'relative z-20'}`}
             style={showSuggestions ? {} : { 
               transform: `perspective(1000px) rotateX(${mousePosition.y * 10}deg) rotateY(${mousePosition.x * 10}deg)`,
               transition: 'transform 0.1s ease-out'
             }}
           >
-            {showSuggestions && (
-              <div className="flex justify-between items-center mb-4 sm:hidden">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Search</h3>
-                <button 
-                  type="button" 
-                  onClick={(e) => { e.preventDefault(); setShowSuggestions(false); }}
-                  className="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            )}
-
-            <div className={`relative rounded-full p-2 flex flex-col sm:flex-row sm:items-center bg-white/80 dark:bg-[#111]/80 backdrop-blur-xl border ${showSuggestions ? "border-gray-300 dark:border-gray-700 shadow-xl" : "border-gray-200 dark:border-gray-800 shadow-sm"}`} ref={suggestionsRef}>
+            <div className={`relative rounded-full p-2 flex flex-row items-center bg-white/80 dark:bg-[#111]/80 backdrop-blur-xl border ${showSuggestions ? "border-gray-300 dark:border-gray-700 shadow-xl" : "border-gray-200 dark:border-gray-800 shadow-sm"}`} ref={suggestionsRef}>
               <div className="flex items-center w-full relative">
                 <div className="pl-4 sm:pl-6 pointer-events-none absolute left-0 z-10">
                   <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400 dark:text-gray-500" />
@@ -160,28 +147,19 @@ export default function Hero({ onSearch }: HeroProps) {
                   value={intent}
                   onChange={(e) => setIntent(e.target.value)}
                   onFocus={() => setShowSuggestions(true)}
-                  className="block w-full pl-12 sm:pl-16 pr-4 py-4 sm:py-6 bg-transparent text-lg sm:text-xl placeholder-gray-500 focus:outline-none text-gray-900 dark:text-white font-medium relative z-20"
+                  className="block w-full pl-12 sm:pl-16 pr-4 py-3 sm:py-6 bg-transparent text-base sm:text-xl placeholder-gray-500 focus:outline-none text-gray-900 dark:text-white font-medium relative z-20"
                   placeholder="Search products..."
                 />
-                <button type="button" className="p-3 sm:p-4 mr-1 sm:mr-2 text-gray-400 hover:text-blue-500 transition-colors rounded-2xl hover:bg-gray-100 dark:hover:bg-white/10 flex-shrink-0 z-20" title="Visual Search (AR)">
+                <button type="button" className="p-2 sm:p-4 mr-1 sm:mr-2 text-gray-400 hover:text-blue-500 transition-colors rounded-2xl hover:bg-gray-100 dark:hover:bg-white/10 flex-shrink-0 z-20" title="Visual Search (AR)">
                   <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
                 <button
                   type="submit"
-                  className="hidden sm:inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-full text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 focus:outline-none transition-all duration-300 active:scale-95 whitespace-nowrap flex-shrink-0 z-20"
+                  className="inline-flex items-center justify-center px-4 sm:px-8 py-3 sm:py-4 border border-transparent text-sm sm:text-lg font-medium rounded-full text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 focus:outline-none transition-all duration-300 active:scale-95 whitespace-nowrap flex-shrink-0 z-20"
                 >
-                  Execute <ArrowRight className="ml-3 w-5 h-5" />
+                  <span className="hidden sm:inline">Execute</span> <ArrowRight className="sm:ml-3 w-5 h-5" />
                 </button>
               </div>
-
-              {showSuggestions && (
-                 <button
-                  type="submit"
-                  className="mt-4 sm:hidden w-full inline-flex items-center justify-center px-6 py-4 border border-transparent text-lg font-medium rounded-full text-white bg-black dark:bg-white dark:text-black hover:bg-gray-900 dark:hover:bg-gray-100 focus:outline-none transition-all duration-300 active:scale-95 whitespace-nowrap z-20"
-                >
-                  Execute <ArrowRight className="ml-2 w-5 h-5" />
-                </button>
-              )}
 
               <AnimatePresence>
                 {showSuggestions && (
@@ -189,7 +167,7 @@ export default function Hero({ onSearch }: HeroProps) {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="static sm:absolute sm:top-full sm:left-0 sm:right-0 mt-4 bg-white dark:bg-[#111] sm:border border-gray-100 dark:border-gray-800 sm:rounded-3xl sm:shadow-2xl overflow-hidden z-50 p-2 text-left"
+                    className="absolute top-full left-0 right-0 mt-4 bg-white dark:bg-[#111] border border-gray-100 dark:border-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden z-50 p-2 text-left"
                   >
                     {recentSearches.length > 0 && (
                       <div className="mb-2">

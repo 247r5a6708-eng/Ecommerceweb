@@ -28,7 +28,17 @@ export default function ReviewModal({ product, isOpen, onClose, reviews, onAddRe
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId: product.id, reviews })
           });
-          const data = await res.json();
+          let data;
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        const textRes = await res.text();
+        try {
+          data = JSON.parse(textRes);
+        } catch (e) {
+          data = {};
+        }
           setAiSummary(data);
         } catch (error) {
           console.error("Failed to fetch review summary", error);

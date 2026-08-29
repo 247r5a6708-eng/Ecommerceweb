@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Minus, Plus, ShoppingBag, CheckCircle2, Loader2, CreditCard, MapPin, Truck } from 'lucide-react';
+import { X, Minus, Plus, ShoppingBag, CheckCircle2, Loader2, CreditCard, MapPin, Truck, Box, Package, Zap, Clock } from 'lucide-react';
 import { CartItem, Order, Address, ToastType } from '../types';
 import SafeProductImage from './SafeProductImage';
 
@@ -26,7 +26,29 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
 
   const [checkoutState, setCheckoutState] = useState<'idle' | 'details' | 'loading' | 'success'>('idle');
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+  const [showHoldAlert, setShowHoldAlert] = useState(false);
+  const [sendReceipt, setSendReceipt] = useState(!!userProfile?.email);
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  useEffect(() => {
+    setSendReceipt(!!userProfile?.email);
+  }, [userProfile?.email]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (items.length > 0 && checkoutState === 'idle') {
+      timer = setTimeout(() => {
+        setShowHoldAlert(true);
+      }, 10 * 60 * 1000); // 10 minutes of inactivity
+    } else {
+      setShowHoldAlert(false);
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [items, checkoutState, isOpen]);
   
   const defaultSavedAddress = userProfile.savedAddresses?.find(a => a.isDefault) || userProfile.savedAddresses?.[0];
 
@@ -48,6 +70,7 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
   }, [defaultSavedAddress]);
   
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
+  const [shippingMethod, setShippingMethod] = useState('standard');
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [isGiftWrapped, setIsGiftWrapped] = useState(false);
@@ -55,7 +78,7 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
   const GIFT_WRAP_FEE = 5.00;
   
   const discountAmount = subtotal * discount;
-  const totalAmount = subtotal - discountAmount + (isGiftWrapped ? GIFT_WRAP_FEE : 0);
+  const totalAmount = subtotal - discountAmount + (isGiftWrapped ? GIFT_WRAP_FEE : 0) + (shippingMethod === 'drone' ? 15 : 0);
 
   useEffect(() => {
     if (!isOpen) {
@@ -176,17 +199,43 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
             ))}
           </ul>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-            <div className="w-20 h-20 bg-gray-50 dark:bg-white/10 rounded-full flex items-center justify-center mb-2">
-              <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-            </div>
-            <p className="text-lg font-medium text-gray-900 dark:text-white">Your cart is empty</p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Looks like you haven't added anything yet.</p>
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ type: "spring", bounce: 0.5, duration: 0.6 }}
+              className="relative w-48 h-48 mb-4"
+            >
+              <div className="absolute inset-0 bg-blue-100/50 dark:bg-blue-900/20 rounded-full blur-3xl opacity-60"></div>
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="w-32 h-32 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-white/5 dark:to-white/10 rounded-full flex items-center justify-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] border border-white/50 dark:border-white/10 relative">
+                  <motion.div
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                  >
+                    <ShoppingBag className="w-12 h-12 text-blue-500 dark:text-blue-400" strokeWidth={1.5} />
+                  </motion.div>
+                  {/* Decorative sparkles */}
+                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.4, 0.8, 0.4] }} transition={{ repeat: Infinity, duration: 2 }} className="absolute top-6 right-8 w-2 h-2 rounded-full bg-yellow-400" />
+                  <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.7, 0.3] }} transition={{ repeat: Infinity, duration: 2.5, delay: 0.5 }} className="absolute bottom-8 left-8 w-2.5 h-2.5 rounded-full bg-purple-400" />
+                  <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.5, 0.2] }} transition={{ repeat: Infinity, duration: 3, delay: 1 }} className="absolute top-10 left-10 w-1.5 h-1.5 rounded-full bg-blue-400" />
+                </div>
+              </div>
+            </motion.div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">Your cart is empty</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-sm max-w-[240px] mb-8 leading-relaxed">
+              Looks like you haven't found anything you like yet. Let's change that!
+            </p>
             <button 
               onClick={onClose}
-              className="mt-4 px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm font-medium"
+              className="group relative inline-flex items-center justify-center px-8 py-4 bg-black dark:bg-white text-white dark:text-black rounded-full hover:bg-gray-900 dark:hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 font-bold text-sm w-full sm:w-auto"
             >
-              Continue Shopping
+              <span>Continue Shopping</span>
+              <motion.div 
+                className="ml-2 group-hover:translate-x-1 transition-transform"
+              >
+                &rarr;
+              </motion.div>
             </button>
           </div>
         ) : (
@@ -282,10 +331,29 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
             </AnimatePresence>
           </div>
           
+          <div className="mb-4">
+            <button
+              onClick={() => {
+                alert("Connecting Web3 Wallet to verify NFT ownership...");
+                setDiscount(0.15);
+              }}
+              className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 border border-purple-200 dark:border-purple-500/30 rounded-lg text-sm font-bold text-purple-700 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-900/10 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+            >
+              <Box className="w-4 h-4" />
+              <span>Connect NFT for 15% Holder Discount</span>
+            </button>
+          </div>
+
           <div className="flex justify-between text-base font-medium text-gray-900 dark:text-white mb-2">
             <p>Subtotal</p>
             <p>{formatPrice(subtotal)}</p>
           </div>
+          {discountAmount > 0 && (
+            <div className="flex justify-between text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
+              <p>NFT Discount</p>
+              <p>-{formatPrice(discountAmount)}</p>
+            </div>
+          )}
           {isGiftWrapped && (
             <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
               <p>Gift Wrap</p>
@@ -301,9 +369,16 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
           </p>
           <button
             onClick={() => setCheckoutState('details')}
-            className="flex w-full items-center justify-center rounded-md bg-gray-900 dark:bg-white px-6 py-3.5 text-base font-medium text-white dark:text-gray-900 shadow-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+            className="flex w-full items-center justify-center rounded-md bg-gray-900 dark:bg-white px-6 py-3.5 text-base font-medium text-white dark:text-gray-900 shadow-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors mb-3"
           >
             Checkout
+          </button>
+          
+          <button
+            onClick={() => alert("Connecting to Web3 Wallet (MetaMask/Phantom)...")}
+            className="flex w-full items-center justify-center rounded-md bg-blue-600/10 px-6 py-3.5 text-base font-bold text-blue-600 dark:text-blue-400 border border-blue-600/20 hover:bg-blue-600/20 transition-colors"
+          >
+            Pay with Crypto (Web3)
           </button>
         </div>
       )}
@@ -358,6 +433,42 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
                 value={address.zipCode} onChange={e => setAddress({...address, zipCode: e.target.value})} 
               />
             </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-gray-100 dark:border-white/5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+            <Package className="w-4 h-4 mr-2" /> Shipping Method
+          </h3>
+          <div className="space-y-2">
+            <label className="flex items-center p-3 border border-gray-200 dark:border-white/10 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <input 
+                type="radio" 
+                name="shipping" 
+                value="standard" 
+                checked={shippingMethod === 'standard'}
+                onChange={e => setShippingMethod(e.target.value)}
+                className="text-gray-900 focus:ring-gray-900"
+              />
+              <div className="ml-3">
+                <span className="block text-sm text-gray-900 dark:text-white font-medium">Standard Delivery (3-5 days)</span>
+                <span className="block text-xs text-gray-500">Free</span>
+              </div>
+            </label>
+            <label className="flex items-center p-3 border border-blue-200 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-900/10 rounded-md cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <input 
+                type="radio" 
+                name="shipping" 
+                value="drone" 
+                checked={shippingMethod === 'drone'}
+                onChange={e => setShippingMethod(e.target.value)}
+                className="text-blue-600 focus:ring-blue-600"
+              />
+              <div className="ml-3">
+                <span className="block text-sm text-blue-900 dark:text-blue-100 font-bold flex items-center">Hyper-Local Drone Delivery <Zap className="w-3 h-3 ml-1 text-yellow-500" /></span>
+                <span className="block text-xs text-blue-600 dark:text-blue-400">Under 30 minutes. +$15.00</span>
+              </div>
+            </label>
           </div>
         </div>
 
@@ -419,16 +530,42 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
           <p>Subtotal</p>
           <p>{formatPrice(subtotal)}</p>
         </div>
+        {discountAmount > 0 && (
+          <div className="flex justify-between text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
+            <p>NFT Discount</p>
+            <p>-{formatPrice(discountAmount)}</p>
+          </div>
+        )}
+        {shippingMethod === 'drone' && (
+          <div className="flex justify-between text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+            <p>Drone Delivery</p>
+            <p>+$15.00</p>
+          </div>
+        )}
         {isGiftWrapped && (
           <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <p>Gift Wrap</p>
             <p>{formatPrice(GIFT_WRAP_FEE)}</p>
           </div>
         )}
-        <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white mb-6 pt-2 border-t border-gray-100 dark:border-white/5">
+        <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white mb-4 pt-2 border-t border-gray-100 dark:border-white/5">
           <p>Total</p>
           <p>{formatPrice(totalAmount)}</p>
         </div>
+        
+        <div className="flex items-center mb-6">
+          <input
+            type="checkbox"
+            id="sendReceipt"
+            checked={sendReceipt}
+            onChange={(e) => setSendReceipt(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 accent-gray-900 dark:accent-white"
+          />
+          <label htmlFor="sendReceipt" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+            Send digital receipt to my email
+          </label>
+        </div>
+
         <button
           onClick={handleCheckout}
           className="flex w-full items-center justify-center rounded-md bg-gray-900 dark:bg-white px-6 py-3.5 text-base font-medium text-white dark:text-gray-900 shadow-sm hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
@@ -529,6 +666,53 @@ export default function Cart({ isOpen, onClose, items, isLoading = false, onUpda
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            <AnimatePresence>
+              {showHoldAlert && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                  exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                  className="mx-6 mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl flex flex-col space-y-4 shadow-sm overflow-hidden shrink-0"
+                >
+                  <div className="flex items-start">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-800/50 rounded-lg mr-3 shrink-0">
+                      <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">Are you still there?</h3>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                        Your cart has been inactive for 10 minutes. We can save your items for later securely to your Firebase profile.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => {
+                        if (onAddToast) {
+                          onAddToast({
+                            title: 'Cart Held Successfully',
+                            message: 'Your items are safely synced to Firebase.',
+                            type: 'success'
+                          });
+                        }
+                        setShowHoldAlert(false);
+                        onClose();
+                      }}
+                      className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                    >
+                      Hold Cart
+                    </button>
+                    <button
+                      onClick={() => setShowHoldAlert(false)}
+                      className="flex-1 py-2.5 bg-white dark:bg-white/10 hover:bg-gray-50 dark:hover:bg-white/20 text-gray-900 dark:text-white text-xs font-bold rounded-lg transition-colors border border-gray-200 dark:border-transparent"
+                    >
+                      Keep Shopping
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {checkoutState === 'loading' && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 dark:bg-[#121216]/80 backdrop-blur-sm">

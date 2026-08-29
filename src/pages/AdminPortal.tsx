@@ -1,14 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { useUser } from '../contexts/UserContext';
-import { Shield, LayoutDashboard, ArrowLeft, ShoppingCart, Users, Package, Settings, Database, Loader2, Menu, X, CheckSquare, Search, Bell, UserCog, Brain } from 'lucide-react';
+import { Shield, LayoutDashboard, Home, ArrowLeft, ShoppingCart, Users, Package, Settings, Database, Loader2, Menu, X, CheckSquare, Search, Bell, UserCog, Brain } from 'lucide-react';
 import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import AdminDashboard from './admin/Dashboard';
 import Placeholder from './admin/Placeholder';
 import AdminProducts from './admin/Products';
+import Promotions from './admin/Promotions';
+import StorefrontCMS from './admin/StorefrontCMS';
+import AdminReviews from './admin/Reviews';
 import AdminOrders from './admin/Orders';
 import AdminCustomers from './admin/Customers';
+import ReturnsProcessing from './admin/ReturnsProcessing';
+import AbandonedCarts from './admin/AbandonedCarts';
 import SalesOverview from './admin/SalesOverview';
 import Customer360 from './admin/Customer360';
 import Invoices from './admin/Invoices';
@@ -22,7 +27,7 @@ import { Toaster } from 'react-hot-toast';
 import AdminImport from './admin/ImportData';
 
 import { motion, AnimatePresence } from 'motion/react';
-import { TrendingUp, FileText, FolderTree, Upload, LineChart, AlertTriangle, ClipboardList } from 'lucide-react';
+import { TrendingUp, FileText, FolderTree, Upload, LineChart, AlertTriangle, ClipboardList, Star, RotateCcw } from 'lucide-react';
 
 export default function AdminPortal() {
   const { userProfile } = useUser();
@@ -51,7 +56,8 @@ export default function AdminPortal() {
       sections.push({
         title: "Core",
         items: [
-          { name: "Dashboard", path: "/admin", icon: LayoutDashboard }
+          { name: "Admin", path: "/admin", icon: LayoutDashboard },
+          { name: "Home", path: "/", icon: Home }
         ]
       });
     }
@@ -61,6 +67,8 @@ export default function AdminPortal() {
       if (isManager) salesItems.push({ name: "Overview", path: "/admin/sales-overview", icon: TrendingUp });
       salesItems.push({ name: "Orders", path: "/admin/orders", icon: ShoppingCart });
       if (isManager) salesItems.push({ name: "Invoices", path: "/admin/invoices", icon: FileText });
+      salesItems.push({ name: "Returns", path: "/admin/returns", icon: RotateCcw });
+      if (isManager) salesItems.push({ name: "Abandoned Carts", path: "/admin/abandoned-carts", icon: ShoppingCart });
       
       sections.push({ title: "Sales", items: salesItems });
     }
@@ -71,7 +79,18 @@ export default function AdminPortal() {
         items: [
           { name: "All Customers", path: "/admin/customers", icon: Users },
           { name: "Customer 360", path: "/admin/customer-360", icon: Search },
-          { name: "Insights & Fit", path: "/admin/customer-insights", icon: Brain }
+          { name: "Insights & Fit", path: "/admin/customer-insights", icon: Brain },
+          { name: "Reviews", path: "/admin/reviews", icon: Star }
+        ]
+      });
+    }
+
+    if (isManager) {
+      sections.push({
+        title: "Marketing",
+        items: [
+          { name: "Promotions", path: "/admin/promotions", icon: Bell },
+          { name: "Storefront CMS", path: "/admin/storefront", icon: LayoutDashboard },
         ]
       });
     }
@@ -302,15 +321,20 @@ export default function AdminPortal() {
             {isManager && <Route path="/sales-overview" element={<SalesOverview />} />}
             {isSupport && <Route path="/orders" element={<AdminOrders />} />}
             {isManager && <Route path="/invoices" element={<Invoices />} />}
+            {isSupport && <Route path="/returns" element={<ReturnsProcessing />} />}
+            {isManager && <Route path="/abandoned-carts" element={<AbandonedCarts />} />}
             
             {isSupport && <Route path="/customers" element={<AdminCustomers />} />}
             {isSupport && <Route path="/customer-360" element={<Customer360 />} />}
             {isSupport && <Route path="/customer-insights" element={<CustomerInsights />} />}
+            {isSupport && <Route path="/reviews" element={<AdminReviews />} />}
             
             {isManager && <Route path="/products" element={<AdminProducts />} />}
             {isManager && <Route path="/low-stock" element={<LowStock />} />}
             {isManager && <Route path="/categories" element={<Placeholder title="Categories" />} />}
             {isManager && <Route path="/import" element={<AdminImport />} />}
+            {isManager && <Route path="/promotions" element={<Promotions />} />}
+            {isManager && <Route path="/storefront" element={<StorefrontCMS />} />}
             
             {isAdmin && <Route path="/analytics" element={<Analytics />} />}
             {isAdmin && <Route path="/roles" element={<UserRoles />} />}
